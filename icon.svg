@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="113" fill="#7cb342"/>
+<circle cx="80" cy="80" r="15" fill="#aed581" opacity="0.6"/>
+<circle cx="420" cy="100" r="20" fill="#aed581" opacity="0.6"/>
+<circle cx="400" cy="400" r="12" fill="#aed581" opacity="0.6"/>
+<circle cx="100" cy="420" r="18" fill="#aed581" opacity="0.6"/>
+<!-- 头部阴影 -->
+<ellipse cx="256" cy="219" rx="175" ry="175" fill="#3782be"/>
+<!-- 头部蓝色大球 -->
+<ellipse cx="256" cy="215" rx="175" ry="175" fill="#4a9ed6"/>
+<!-- 白色脸部 -->
+<ellipse cx="256" cy="230" rx="130" ry="130" fill="white"/>
+<!-- 左眼白 -->
+<ellipse cx="231" cy="171" rx="21" ry="26" fill="white" stroke="#333" stroke-width="3"/>
+<!-- 右眼白 -->
+<ellipse cx="281" cy="171" rx="21" ry="26" fill="white" stroke="#333" stroke-width="3"/>
+<!-- 左眼珠 -->
+<circle cx="237" cy="170" r="16" fill="#333"/>
+<!-- 右眼珠 -->
+<circle cx="287" cy="170" r="16" fill="#333"/>
+<!-- 左眼珠高光 -->
+<circle cx="241" cy="166" r="5" fill="white"/>
+<!-- 右眼珠高光 -->
+<circle cx="291" cy="166" r="5" fill="white"/>
+<!-- 左眼小高光 -->
+<circle cx="228" cy="174" r="2" fill="white"/>
+<!-- 右眼小高光 -->
+<circle cx="278" cy="174" r="2" fill="white"/>
+<!-- 红鼻子阴影 -->
+<circle cx="256" cy="222" r="26" fill="#c83232"/>
+<!-- 红鼻子 -->
+<circle cx="256" cy="220" r="26" fill="#e74c3c"/>
+<!-- 鼻子大高光 -->
+<circle cx="248" cy="212" r="5" fill="white" opacity="0.8"/>
+<!-- 鼻子小高光 -->
+<circle cx="261" cy="226" r="2" fill="#ffc8c8"/>
+<!-- 大笑嘴 -->
+<path d="M 180 260 Q 256 300 332 260" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+<!-- 粉色舌头 -->
+<path d="M 230 270 A 26 10 0 0 0 282 270 Z" fill="#ffaaaa"/>
+<!-- 左胡须 -->
+<line x1="100" y1="200" x2="175" y2="205" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+<line x1="95" y1="220" x2="175" y2="222" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+<line x1="100" y1="240" x2="175" y2="240" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+<!-- 右胡须 -->
+<line x1="337" y1="205" x2="412" y2="200" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+<line x1="337" y1="222" x2="417" y2="220" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+<line x1="337" y1="240" x2="412" y2="240" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+<!-- 白色身体 -->
+<ellipse cx="256" cy="385" rx="70" ry="70" fill="white"/>
+<!-- 金色铃铛 -->
+<circle cx="256" cy="327" r="28" fill="#c8a014"/>
+<circle cx="256" cy="325" r="28" fill="#ffc81e"/>
+<line x1="228" y1="322" x2="284" y2="322" stroke="#b48c14" stroke-width="3"/>
+<circle cx="256" cy="332" r="5" fill="#333"/>
+<circle cx="248" cy="317" r="5" fill="#ffffc8" opacity="0.8"/>
+<!-- 头顶旋 -->
+<ellipse cx="256" cy="45" rx="7" ry="10" fill="#3782be"/>
+</svg>
