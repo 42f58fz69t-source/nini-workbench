@@ -923,11 +923,39 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 <div class="cat-bubble" id="catBubble"></div>
 
 <script>
+// ===== 强制更新机制：解决 iOS Safari PWA 缓存不刷新问题 =====
+const APP_VERSION = '2026-07-28-v12'; // 每次大更新时改此值，用户打开即自动清旧缓存
+(function() {
+  try {
+    const lastVer = localStorage.getItem('nini_app_ver') || '';
+    const needClear = (lastVer !== APP_VERSION) || (location.search.indexOf('clear=1') !== -1);
+    if (needClear && 'serviceWorker' in navigator) {
+      // 1. 注销所有旧 Service Worker
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        const ps = regs.map(r => r.unregister());
+        return Promise.all(ps);
+      }).then(() => {
+        // 2. 清除所有 Cache Storage 缓存
+        return caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))));
+      }).then(() => {
+        // 3. 记录新版本号
+        localStorage.setItem('nini_app_ver', APP_VERSION);
+        // 4. 如果是 clear=1 触发的，去掉参数后刷新
+        if (location.search.indexOf('clear=1') !== -1) {
+          location.href = location.pathname + location.hash;
+        }
+      }).catch(()=>{});
+    } else if (!needClear) {
+      localStorage.setItem('nini_app_ver', APP_VERSION);
+    }
+  } catch(e){}
+})();
+
 // 注册 Service Worker（相对路径，兼容 GitHub Pages 子路径与根域名）
 if ('serviceWorker' in navigator) {
   const swPath = (location.pathname || '/').replace(/index\.html$/, '').replace(/\/$/, '') + '/sw.js';
-  navigator.serviceWorker.register(swPath + window.location.search)
-    .then(reg => console.log('SW registered:', reg.scope))
+  navigator.serviceWorker.register(swPath)
+    .then(reg => { console.log('SW registered:', reg.scope); reg.update(); }) // 主动检查更新
     .catch(err => console.log('SW failed:', err));
 }
 </script>

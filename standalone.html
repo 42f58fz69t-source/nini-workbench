@@ -3876,15 +3876,40 @@ const PetCat = {
 <div class="cat-bubble" id="catBubble"></div>
 
 <script>
+// ===== 强制更新机制：解决 iOS Safari PWA 缓存不刷新问题 =====
+const APP_VERSION = '2026-07-28-v12'; // 每次大更新时改此值，用户打开即自动清旧缓存
+(function() {
+  try {
+    const lastVer = localStorage.getItem('nini_app_ver') || '';
+    const needClear = (lastVer !== APP_VERSION) || (location.search.indexOf('clear=1') !== -1);
+    if (needClear && 'serviceWorker' in navigator) {
+      // 1. 注销所有旧 Service Worker
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        const ps = regs.map(r => r.unregister());
+        return Promise.all(ps);
+      }).then(() => {
+        // 2. 清除所有 Cache Storage 缓存
+        return caches.keys().then(names => Promise.all(names.map(n => caches.delete(n))));
+      }).then(() => {
+        // 3. 记录新版本号
+        localStorage.setItem('nini_app_ver', APP_VERSION);
+        // 4. 如果是 clear=1 触发的，去掉参数后刷新
+        if (location.search.indexOf('clear=1') !== -1) {
+          location.href = location.pathname + location.hash;
+        }
+      }).catch(()=>{});
+    } else if (!needClear) {
+      localStorage.setItem('nini_app_ver', APP_VERSION);
+    }
+  } catch(e){}
+})();
+
+// 注册 Service Worker（相对路径，兼容 GitHub Pages 子路径与根域名）
 if ('serviceWorker' in navigator) {
-  const swB64 = "Y29uc3QgQ0FDSEUgPSAnbmluaS12MTInOwpjb25zdCBGSUxFUyA9IFsKICAnLi8nLCAnLi9pbmRleC5odG1sJywgJy4vYXBwLmpzJywgJy4vYnVpbHRpbi1kYXRhLmpzJywKICAnLi9tYW5pZmVzdC5qc29uJywgJy4vaWNvbi12Mi0xOTIucG5nJywgJy4vaWNvbi12Mi01MTIucG5nJwpdOwoKc2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgKGUpID0+IHsKICBlLndhaXRVbnRpbCgKICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGMgPT4gYy5hZGRBbGwoRklMRVMpLmNhdGNoKCgpID0+IHt9KSkKICApOwogIHNlbGYuc2tpcFdhaXRpbmcoKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2FjdGl2YXRlJywgKGUpID0+IHsKICBlLndhaXRVbnRpbCgKICAgIGNhY2hlcy5rZXlzKCkudGhlbihrZXlzID0+CiAgICAgIFByb21pc2UuYWxsKGtleXMuZmlsdGVyKGsgPT4gayAhPT0gQ0FDSEUpLm1hcChrID0+IGNhY2hlcy5kZWxldGUoaykpKQogICAgKS50aGVuKCgpID0+IHNlbGYuY2xpZW50cy5jbGFpbSgpKQogICk7Cn0pOwoKLy8g572R57uc5LyY5YWI562W55Wl77ya6IGU572R5pe25ou/5pyA5paw5pWw5o2u5bm25pu05paw57yT5a2Y77yM56a757q/5pe255So57yT5a2YCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLCAoZSkgPT4gewogIGlmIChlLnJlcXVlc3QubWV0aG9kICE9PSAnR0VUJykgcmV0dXJuOwogIGUucmVzcG9uZFdpdGgoCiAgICBmZXRjaChlLnJlcXVlc3QpLnRoZW4obmV0d29ya1Jlc3AgPT4gewogICAgICBpZiAobmV0d29ya1Jlc3AgJiYgbmV0d29ya1Jlc3Auc3RhdHVzID09PSAyMDApIHsKICAgICAgICBjb25zdCBjb3B5ID0gbmV0d29ya1Jlc3AuY2xvbmUoKTsKICAgICAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihjID0+IGMucHV0KGUucmVxdWVzdCwgY29weSkpLmNhdGNoKCgpID0+IHt9KTsKICAgICAgfQogICAgICByZXR1cm4gbmV0d29ya1Jlc3A7CiAgICB9KS5jYXRjaCgoKSA9PgogICAgICBjYWNoZXMubWF0Y2goZS5yZXF1ZXN0KS50aGVuKGNhY2hlZCA9PgogICAgICAgIGNhY2hlZCB8fCBjYWNoZXMubWF0Y2goJy4vaW5kZXguaHRtbCcpCiAgICAgICkKICAgICkKICApOwp9KTsK";
-  const bytes = Uint8Array.from(atob(swB64), c => c.charCodeAt(0));
-  const swCode = new TextDecoder("utf-8").decode(bytes);
-  const blob = new Blob([swCode], {type: "application/javascript"});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl)
-    .then(reg => console.log("SW registered (standalone):", reg.scope))
-    .catch(err => console.log("SW failed:", err));
+  const swPath = (location.pathname || '/').replace(/index\.html$/, '').replace(/\/$/, '') + '/sw.js';
+  navigator.serviceWorker.register(swPath)
+    .then(reg => { console.log('SW registered:', reg.scope); reg.update(); }) // 主动检查更新
+    .catch(err => console.log('SW failed:', err));
 }
 </script>
 </body>
