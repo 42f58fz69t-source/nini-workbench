@@ -1,3 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="妮妮的工作台">
+<meta name="theme-color" content="#7cb342">
+<title>妮妮的工作台</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-v2-192.png">
+<link rel="icon" href="icon-v2-192.png">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  /* 抹茶配色 */
+  --bg: #f7f6f0;
+  --bg-2: #efece2;
+  --card: #ffffff;
+  --primary: #7cb342;          /* 抹茶绿 */
+  --primary-light: #aed581;
+  --primary-dark: #558b2f;
+  --primary-soft: #f1f8e9;     /* 极浅抹茶 */
+  --accent: #ffab91;           /* 蜡笔小新粉橙 */
+  --accent-2: #ffccbc;
+  --blue: #4fc3f7;             /* 哆啦A梦蓝 */
+  --yellow: #fff176;           /* 哆啦A梦黄铃铛 */
+  --text: #3e4a3e;
+  --text-2: #7a8a7a;
+  --text-3: #b0bba8;
+  --border: #e8e5d8;
+  --danger: #ef5350;
+  --success: #66bb6a;
+  --warning: #ffa726;
+  --pink: #ec407a;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 暗色护眼模式（抹茶暗色） */
+[data-theme="dark"] {
+  --bg: #1a2417;
+  --bg-2: #232f1e;
+  --card: #2a3624;
+  --primary: #8bc34a;
+  --primary-light: #aed581;
+  --primary-dark: #c5e1a5;
+  --primary-soft: #2f3d28;
+  --accent: #ffab91;
+  --accent-2: #ffccbc;
+  --blue: #4fc3f7;
+  --yellow: #fff176;
+  --text: #e8f0e0;
+  --text-2: #aab89c;
+  --text-3: #6f7d60;
+  --border: #3a4a30;
+  --danger: #ef9a9a;
+  --success: #a5d6a7;
+  --warning: #ffb74d;
+  --pink: #f48fb1;
+}
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, #1c2b18, #243318, #1a2616, #222f1c);
+  background-size: 400% 400%;
+}
+[data-theme="dark"] .sidebar { background: rgba(42,54,36,0.72); }
+[data-theme="dark"] .modal, [data-theme="dark"] .input, [data-theme="dark"] .textarea { color: var(--text); }
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e9f4da, #f3f8e8, #d9edc2, #ecf6de, #e3f0cf);
+  background-size: 400% 400%;
+  animation: bgFloat 22s ease infinite;
+}
+@keyframes bgFloat {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; font-size: inherit; }
+input, textarea, select { font-family: inherit; font-size: inherit; color: var(--text); }
+
+/* ===== App layout: responsive split ===== */
+.app-wrap { display: flex; min-height: 100vh; }
+.sidebar {
+  display: flex;
+  width: 250px; flex-shrink: 0;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(124,179,66,0.15);
+  box-shadow: 4px 0 24px rgba(124,179,66,0.08);
+  flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  padding: calc(var(--safe-area-top) + 16px) 12px calc(var(--safe-area-bottom) + 16px);
+}
+.sidebar .sb-header { padding: 0 8px 16px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.sidebar .sb-header .logo { font-size: 18px; font-weight: 800; color: var(--primary-dark); display: flex; align-items: center; gap: 8px; }
+.sidebar .sb-header .logo .dora { font-size: 22px; }
+.sidebar .sb-header .sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+  color: var(--text-2); font-size: 14px; font-weight: 500; margin-bottom: 2px; transition: all 0.15s;
+}
+.sidebar-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar-item:active, .sidebar-item:hover { background: var(--primary-soft); }
+.sidebar-item.active { background: var(--primary); color: white; }
+.sidebar .sb-section { font-size: 11px; color: var(--text-3); padding: 12px 12px 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.main { flex: 1; min-width: 0; }
+.app { max-width: 600px; margin: 0 auto; }
+
+/* 桌面：侧栏始终完整显示，隐藏返回按钮 */
+@media (min-width: 768px) {
+  .sidebar { display: flex; }
+  .topbar .back-btn, .topbar .menu-btn { display: none; }
+  body.sb-collapsed .sidebar { width: 56px; }
+  body.sb-collapsed .sidebar .sb-header .sub,
+  body.sb-collapsed .sidebar .sb-section,
+  body.sb-collapsed .sidebar-item span { display: none; }
+  body.sb-collapsed .sidebar-item { justify-content: center; }
+}
+
+/* 手机：侧栏做成抽屉，默认收起为竖向图标条，点汉堡展开覆盖面板 */
+@media (max-width: 767px) {
+  body { padding-bottom: calc(16px + var(--safe-area-bottom)); }
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 56px;
+    z-index: 200; padding: calc(var(--safe-area-top) + 12px) 6px calc(var(--safe-area-bottom) + 12px);
+    overflow: hidden;
+  }
+  .sidebar .sb-header .sub,
+  .sidebar .sb-section { display: none; }
+  .sidebar .sb-header .logo { font-size: 0; justify-content: center; }
+  .sidebar .sb-header .logo .dora { font-size: 22px; }
+  .sidebar-item { justify-content: center; padding: 10px 6px; }
+  .sidebar-item span { display: none; }
+  /* 展开态 */
+  body.sb-open .sidebar {
+    width: 250px; padding: calc(var(--safe-area-top) + 16px) 12px calc(var(--safe-area-bottom) + 16px);
+    box-shadow: 8px 0 32px rgba(0,0,0,0.18);
+  }
+  body.sb-open .sidebar .sb-header .logo { font-size: 18px; justify-content: flex-start; }
+  body.sb-open .sidebar .sb-header .sub { display: block; }
+  body.sb-open .sb-section { display: block; }
+  body.sb-open .sidebar-item { justify-content: flex-start; padding: 10px 12px; }
+  body.sb-open .sidebar-item span { display: inline; }
+  /* 遮罩 */
+  body.sb-open::after {
+    content: ''; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 150;
+  }
+}
+
+/* ===== Cute theme additions ===== */
+/* 柔和圆角阴影 - 所有卡片 */
+.card, .grid-card, .home-hero, .btn, .modal, .input, .textarea, .chip {
+  box-shadow: 0 2px 12px rgba(124,179,66,0.07), 0 1px 3px rgba(0,0,0,0.03);
+}
+
+/* 卡片悬停微动 */
+.grid-card {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.grid-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(124,179,66,0.13), 0 2px 6px rgba(0,0,0,0.04);
+}
+.grid-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(124,179,66,0.03), transparent);
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.grid-card:hover::after {
+  opacity: 1;
+}
+
+/* 可爱的圆角进度条 */
+.progress-bar {
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--primary-soft), var(--bg-2));
+  overflow: hidden;
+}
+.progress-bar .fill {
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary), var(--primary-dark));
+  position: relative;
+}
+.progress-bar .fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* 按钮添加柔和渐变 + 可爱风格 */
+.btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 4px 16px rgba(124,179,66,0.3), 0 1px 4px rgba(0,0,0,0.05);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+.btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(124,179,66,0.2);
+}
+.btn.secondary {
+  background: linear-gradient(135deg, var(--bg-2), var(--bg));
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid var(--border);
+}
+.btn.small {
+  border-radius: 12px;
+}
+
+/* 选项卡可爱化 */
+.chip {
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  border: 1.5px solid transparent;
+}
+.chip.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 2px 8px rgba(124,179,66,0.2);
+  border-color: var(--primary);
+}
+.chip:not(.active):hover {
+  background: var(--primary-soft);
+  border-color: rgba(124,179,66,0.2);
+}
+
+/* 复选框可爱圆角 */
+.checkbox {
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid var(--border);
+}
+.checkbox.checked {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* 底部导航可爱 */
+.bottomnav {
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -2px 16px rgba(124,179,66,0.07), 0 -1px 4px rgba(0,0,0,0.03);
+  background: linear-gradient(180deg, rgba(255,255,255,0.97), rgba(255,255,255,0.93));
+}
+
+/* Hero 区加更多装饰 */
+.home-hero {
+  overflow: hidden;
+}
+.home-hero::before {
+  content: '🍃🐱💕🍃';
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+  font-size: 18px;
+  opacity: 0.35;
+  animation: float 3s ease-in-out infinite;
+}
+.home-hero::after {
+  content: '🍵';
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  font-size: 42px;
+  opacity: 0.2;
+  transform: rotate(15deg);
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(15deg); }
+  50% { transform: translateY(-6px) rotate(15deg); }
+}
+
+/* 侧边栏柔化 */
+.sidebar {
+  background: linear-gradient(180deg, #eef5e4 0%, var(--bg) 100%);
+  border-right: 1px solid rgba(124,179,66,0.12);
+}
+
+/* 侧边栏 Logo 可爱装饰 */
+.sidebar .sb-header .logo .dora {
+  animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* 分割线柔化 */
+.sidebar .sb-header {
+  border-color: rgba(124,179,66,0.15);
+}
+
+/* 侧边栏项悬停效果 */
+.sidebar-item {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.sidebar-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary-soft), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 12px;
+}
+.sidebar-item:hover::before {
+  opacity: 1;
+}
+.sidebar-item.active {
+  box-shadow: 0 4px 12px rgba(124,179,66,0.25);
+}
+
+/* 统计卡片柔化 */
+.stat-box {
+  background: linear-gradient(135deg, var(--primary-soft), rgba(124,179,66,0.03));
+  border: 1px solid rgba(124,179,66,0.08);
+  border-radius: 16px;
+  transition: transform 0.2s ease;
+}
+.stat-box:hover {
+  transform: translateY(-1px);
+}
+.stat-box .num {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 标题小装饰 */
+.card-title {
+  letter-spacing: 0.3px;
+}
+
+/* 输入框聚焦柔和 */
+.input, .textarea, .select {
+  border-radius: 14px;
+  transition: all 0.25s ease;
+}
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(124,179,66,0.08);
+  transform: translateY(-1px);
+}
+
+/* 模态框柔化 */
+.modal {
+  border-radius: 28px 28px 0 0;
+}
+.modal-handle {
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary));
+  opacity: 0.3;
+}
+
+/* 安装横幅 */
+.install-banner {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-radius: 20px;
+  box-shadow: 0 6px 24px rgba(124,179,66,0.2);
+}
+
+/* ===== 可爱小装饰 ===== */
+/* Topbar 抹茶装饰点 */
+.topbar h1::after {
+  content: ' 🍵';
+  font-size: 16px;
+}
+
+/* 导航项激活时的可爱动效 */
+.nav-item {
+  transition: all 0.2s ease;
+}
+.nav-item.active {
+  transform: translateY(-2px);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 24px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 4px 4px;
+}
+
+/* 空状态小可爱 */
+.empty .emoji {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 分段控制器可爱化 */
+.segmented {
+  border-radius: 14px;
+  padding: 4px;
+  background: var(--bg-2);
+}
+.segmented button {
+  border-radius: 11px;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.segmented button.active {
+  box-shadow: 0 2px 8px rgba(124,179,66,0.12);
+  font-weight: 700;
+}
+
+/* Toast 可爱化 */
+.toast {
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(62,74,62,0.92), rgba(85,139,47,0.92));
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+/* ===== Top bar ===== */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(247,246,240,0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  padding: calc(var(--safe-area-top) + 12px) 16px 12px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.topbar h1 { font-size: 19px; font-weight: 800; letter-spacing: -0.3px; color: var(--primary-dark); }
+.topbar .actions { display: flex; gap: 4px; }
+.topbar .icon-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-dark); }
+.topbar .icon-btn:active { background: var(--primary-soft); }
+.topbar .icon-btn svg { width: 22px; height: 22px; }
+.topbar .back-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-dark); }
+.topbar .back-btn:active { background: var(--primary-soft); }
+.topbar .back-btn svg { width: 22px; height: 22px; }
+.topbar .menu-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-dark); }
+.topbar .menu-btn:active { background: var(--primary-soft); }
+.topbar .menu-btn svg { width: 22px; height: 22px; }
+
+/* ===== Pages ===== */
+.page { display: none; padding: 16px; }
+.page.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ===== Mobile bottom nav ===== */
+.bottomnav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--border);
+  padding-bottom: var(--safe-area-bottom);
+  display: flex; justify-content: space-around;
+}
+@media (min-width: 768px) { .bottomnav { display: none; } }
+.nav-item {
+  flex: 1; padding: 8px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: var(--text-3); font-size: 10px; transition: color 0.15s;
+}
+.nav-item svg { width: 24px; height: 24px; }
+.nav-item.active { color: var(--primary); }
+
+/* ===== Home hero ===== */
+.home-hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white; border-radius: 24px; padding: 24px 20px; margin-bottom: 16px;
+  box-shadow: 0 6px 24px rgba(124,179,66,0.3);
+  position: relative; overflow: hidden;
+}
+.home-hero::after {
+  content: '🍃'; position: absolute; right: 16px; top: 12px; font-size: 40px; opacity: 0.25; transform: rotate(15deg);
+}
+.home-hero .date { font-size: 13px; opacity: 0.85; }
+.home-hero .greeting { font-size: 24px; font-weight: 800; margin-top: 4px; letter-spacing: -0.5px; }
+.home-hero .summary { font-size: 13px; opacity: 0.92; margin-top: 10px; line-height: 1.7; }
+.home-hero .dora-line { font-size: 12px; opacity: 0.8; margin-top: 8px; }
+
+/* ===== Grid ===== */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-card {
+  background: var(--card); border-radius: 18px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 2px 6px rgba(85,139,47,0.06);
+  transition: transform 0.1s; position: relative;
+}
+.grid-card:active { transform: scale(0.97); }
+.grid-card .icon-wrap {
+  width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  color: white;
+}
+.grid-card .icon-wrap svg { width: 24px; height: 24px; }
+.grid-card .title { font-size: 14px; font-weight: 700; color: var(--text); }
+.grid-card .desc { font-size: 11px; color: var(--text-2); line-height: 1.4; }
+.grid-card .badge-new { position: absolute; top: 8px; right: 8px; background: var(--accent); color: white; font-size: 9px; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
+
+/* ===== Cards ===== */
+.card { background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(85,139,47,0.05); }
+.card-title { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.card-title a { color: var(--primary-dark); font-size: 12px; font-weight: 600; }
+
+/* ===== Buttons ===== */
+.btn { background: var(--primary); color: white; padding: 12px 16px; border-radius: 14px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-shadow: 0 3px 10px rgba(124,179,66,0.25); }
+.btn:active { transform: scale(0.98); }
+.btn.secondary { background: var(--bg-2); color: var(--text); box-shadow: none; }
+.btn.danger { background: var(--danger); box-shadow: 0 3px 10px rgba(239,83,80,0.25); }
+.btn.small { width: auto; padding: 6px 12px; font-size: 12px; }
+.btn.ghost { background: transparent; color: var(--primary-dark); box-shadow: none; }
+
+/* ===== Inputs ===== */
+.input, .textarea, .select {
+  width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px;
+  background: var(--card); margin-bottom: 8px; outline: none; transition: border 0.15s;
+}
+.input:focus, .textarea:focus, .select:focus { border-color: var(--primary); }
+.textarea { resize: none; min-height: 70px; }
+.label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; margin-top: 8px; display: block; font-weight: 600; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+
+/* ===== Checkbox list ===== */
+.task-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+.task-item:last-child { border-bottom: none; }
+.checkbox {
+  width: 26px; height: 26px; border: 2px solid var(--border); border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.checkbox.checked { background: var(--primary); border-color: var(--primary); }
+.checkbox svg { width: 16px; height: 16px; color: white; opacity: 0; transition: opacity 0.1s; }
+.checkbox.checked svg { opacity: 1; }
+.task-text { flex: 1; font-size: 15px; }
+.task-item.done .task-text { color: var(--text-3); text-decoration: line-through; }
+.task-delete { color: var(--text-3); padding: 4px; opacity: 0.3; transition: opacity 0.15s; }
+.task-item:active .task-delete { opacity: 1; }
+.task-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+/* ===== Chips ===== */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip { padding: 7px 14px; border-radius: 20px; background: var(--bg-2); font-size: 12px; font-weight: 600; color: var(--text-2); transition: all 0.15s; }
+.chip.active { background: var(--primary); color: white; }
+
+/* ===== Progress ===== */
+.progress-bar { height: 7px; background: var(--bg-2); border-radius: 4px; overflow: hidden; margin: 6px 0; }
+.progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 4px; transition: width 0.3s; }
+
+/* ===== Calendar ===== */
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.calendar-header .month { font-size: 16px; font-weight: 700; color: var(--primary-dark); }
+.calendar-header button { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-dark); }
+.calendar-header button:active { background: var(--primary-soft); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.calendar-weekday { text-align: center; font-size: 11px; color: var(--text-3); padding: 4px 0; font-weight: 600; }
+.calendar-day {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 13px; border-radius: 10px; position: relative; gap: 2px; transition: background 0.1s;
+}
+.calendar-day:active { background: var(--primary-soft); }
+.calendar-day.other { color: var(--text-3); opacity: 0.4; }
+.calendar-day.today { font-weight: 800; }
+.calendar-day.today::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--primary); }
+.calendar-day.period { background: var(--pink); color: white; font-weight: 600; }
+.calendar-day.predicted { background: rgba(236,64,122,0.2); color: var(--pink); }
+.calendar-day.ovulation { background: var(--warning); color: white; font-weight: 600; }
+
+/* ===== Stat ===== */
+.stat-row { display: flex; gap: 10px; }
+.stat-box { flex: 1; background: var(--primary-soft); border-radius: 14px; padding: 12px; text-align: center; }
+.stat-box .num { font-size: 22px; font-weight: 800; color: var(--primary-dark); }
+.stat-box .lbl { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(62,74,62,0.4); z-index: 200;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.modal-overlay.show { display: flex; animation: fadeIn 0.15s; }
+.modal {
+  background: var(--card); width: 100%; max-width: 600px;
+  border-radius: 24px 24px 0 0; padding: 20px 16px calc(20px + var(--safe-area-bottom));
+  max-height: 90vh; overflow-y: auto; animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+.modal-handle { width: 36px; height: 5px; background: var(--text-3); border-radius: 3px; margin: 0 auto 16px; opacity: 0.4; }
+.modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; color: var(--primary-dark); }
+
+/* ===== Segmented ===== */
+.segmented { display: flex; background: var(--bg-2); border-radius: 12px; padding: 3px; margin-bottom: 12px; }
+.segmented button { flex: 1; padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--text-2); transition: all 0.15s; }
+.segmented button.active { background: var(--card); color: var(--primary-dark); box-shadow: 0 1px 4px rgba(85,139,47,0.1); }
+
+/* ===== Empty state ===== */
+.empty { text-align: center; padding: 40px 20px; color: var(--text-3); }
+.empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty .emoji { font-size: 40px; margin-bottom: 8px; opacity: 0.6; }
+
+/* ===== List ===== */
+.list-item { padding: 14px 0; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.list-item:last-child { border-bottom: none; }
+.list-item .main { flex: 1; min-width: 0; }
+.list-item .title { font-size: 15px; font-weight: 600; }
+.list-item .sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.list-item .right { text-align: right; }
+.badge { display: inline-block; padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.badge.pink { background: rgba(236,64,122,0.15); color: var(--pink); }
+.badge.green { background: rgba(102,187,106,0.18); color: var(--success); }
+.badge.orange { background: rgba(255,167,38,0.18); color: var(--warning); }
+.badge.blue { background: rgba(79,195,247,0.18); color: var(--blue); }
+.badge.gray { background: var(--bg-2); color: var(--text-2); }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; bottom: calc(90px + var(--safe-area-bottom)); left: 50%; transform: translateX(-50%);
+  background: rgba(62,74,62,0.9); color: white; padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap;
+}
+@media (min-width: 768px) { .toast { bottom: 24px; } }
+.toast.show { opacity: 1; }
+
+/* ===== Cycle phase card ===== */
+.phase-card { border-radius: 18px; padding: 16px; color: white; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+.phase-card .phase-name { font-size: 18px; font-weight: 800; }
+.phase-card .phase-desc { font-size: 13px; opacity: 0.95; margin-top: 4px; }
+.phase-card .tips { margin-top: 12px; font-size: 12px; line-height: 1.8; }
+.phase-card .tips strong { font-weight: 700; }
+
+/* ===== Habit ===== */
+.habit-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+.habit-row:last-child { border-bottom: none; }
+.habit-streak { font-size: 11px; color: var(--warning); font-weight: 700; }
+
+/* ===== Money ===== */
+.money-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+.money-item:last-child { border-bottom: none; }
+.money-amount { font-size: 16px; font-weight: 800; }
+.money-amount.income { color: var(--success); }
+.money-amount.expense { color: var(--danger); }
+
+/* ===== Install banner ===== */
+.install-banner {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white; padding: 12px 16px; border-radius: 16px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px; font-size: 13px;
+}
+.install-banner button { background: white; color: var(--primary-dark); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12px; white-space: nowrap; }
+.install-banner .close { margin-left: auto; color: white; opacity: 0.7; font-size: 18px; padding: 0 4px; }
+
+/* ===== Daily read module ===== */
+.read-item { padding: 14px 0; border-bottom: 0.5px solid var(--border); }
+.read-item:last-child { border-bottom: none; }
+.read-item .read-title { font-size: 14px; font-weight: 600; line-height: 1.6; }
+.read-item .read-source { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.read-item .read-quiz { background: var(--primary-soft); border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+.read-item .read-quiz .q-label { font-size: 10px; color: var(--primary-dark); font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.read-item .read-quiz .options { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.read-item .read-quiz .opt { padding: 6px 10px; border-radius: 8px; background: var(--card); font-size: 12px; border: 1.5px solid transparent; transition: all 0.15s; }
+.read-item .read-quiz .opt:active { background: var(--bg-2); }
+.read-item .read-quiz .opt.correct { border-color: var(--success); background: rgba(102,187,106,0.1); }
+.read-item .read-quiz .opt.wrong { border-color: var(--danger); background: rgba(239,83,80,0.1); }
+.read-item .read-quiz .answer-reveal { font-size: 11px; color: var(--success); margin-top: 6px; font-weight: 600; }
+.essay-box { background: var(--primary-soft); border-radius: 14px; padding: 16px; margin-top: 8px; }
+.essay-box .topic-label { font-size: 10px; color: var(--primary-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.essay-box .topic { font-size: 15px; font-weight: 700; margin-top: 4px; line-height: 1.6; }
+.essay-box .content-label { font-size: 10px; color: var(--primary-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; }
+.essay-box .content { font-size: 13px; line-height: 1.9; margin-top: 6px; }
+.essay-box .content p { margin-bottom: 6px; }
+.refresh-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--primary-dark); font-weight: 600; padding: 6px 12px; border-radius: 8px; background: var(--primary-soft); }
+
+/* ===== 哆啦A梦 & 蜡笔小新 动态装饰 ===== */
+/* 哆啦A梦 - 右下角浮动 */
+.doraemon {
+  position: fixed;
+  bottom: 100px;
+  right: 16px;
+  z-index: 50;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  animation: doraemonFloat 3s ease-in-out infinite;
+}
+@keyframes doraemonFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(3deg); }
+  75% { transform: translateY(-4px) rotate(-2deg); }
+}
+/* 蜡笔小新 - 左下角浮动 */
+.shinchan {
+  position: fixed;
+  bottom: 100px;
+  left: 16px;
+  z-index: 50;
+  width: 55px;
+  height: 55px;
+  pointer-events: none;
+  animation: shinchanBounce 2.5s ease-in-out infinite;
+}
+@keyframes shinchanBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-14px) rotate(-5deg); }
+  60% { transform: translateY(-6px) rotate(3deg); }
+}
+/* 哆啦A梦的铃铛 */
+.doraemon-bell {
+  position: fixed;
+  bottom: 155px;
+  right: 38px;
+  z-index: 51;
+  width: 12px;
+  height: 12px;
+  background: var(--yellow);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: bellRing 2s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(255,241,118,0.6);
+}
+@keyframes bellRing {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+/* 小新的动感超人披风 */
+.shinchan-cape {
+  position: fixed;
+  bottom: 148px;
+  left: 38px;
+  z-index: 51;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
+  animation: capeWave 1.5s ease-in-out infinite;
+}
+@keyframes capeWave {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}
+/* 移动端适配 */
+@media (max-width: 767px) {
+  .doraemon { bottom: 130px; right: 10px; width: 48px; height: 48px; }
+  .shinchan { bottom: 130px; left: 10px; width: 44px; height: 44px; }
+  .doraemon-bell { bottom: 173px; right: 30px; }
+  .shinchan-cape { bottom: 168px; left: 30px; }
+}
+/* 小星星点缀 */
+.sparkle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 49;
+  font-size: 14px;
+  opacity: 0;
+  animation: sparkleFloat 2s ease-in-out infinite;
+}
+.sparkle:nth-child(1) { bottom: 170px; right: 80px; animation-delay: 0s; }
+.sparkle:nth-child(2) { bottom: 140px; right: 50px; animation-delay: 0.6s; }
+.sparkle:nth-child(3) { bottom: 170px; left: 70px; animation-delay: 1.2s; }
+.sparkle:nth-child(4) { bottom: 140px; left: 60px; animation-delay: 0.3s; }
+@keyframes sparkleFloat {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 0.7; transform: translateY(-20px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.3); }
+}
+
+/* ===== 陪伴猫咪电子宠物 ===== */
+.pet-cat {
+  position: fixed; bottom: 96px; left: 14px; z-index: 60; width: 60px; height: 60px;
+  cursor: grab; touch-action: none; animation: catFloat 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(124,179,66,0.2));
+  user-select: none; -webkit-user-select: none;
+}
+.pet-cat:active { cursor: grabbing; }
+.pet-cat.dragging { animation: none; transition: none; }
+@keyframes catFloat {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+.pet-cat.cheer { animation: catCheer 0.6s ease; }
+@keyframes catCheer {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.35) translateY(-12px) rotate(-6deg); }
+  100% { transform: scale(1); }
+}
+.cat-bubble {
+  position: fixed; bottom: 162px; left: 14px; z-index: 61; max-width: 190px;
+  background: #fff; border: 2px solid var(--primary); border-radius: 16px; padding: 10px 14px;
+  font-size: 13px; line-height: 1.5; color: var(--text); font-weight: 600;
+  box-shadow: 0 6px 20px rgba(124,179,66,0.25);
+  opacity: 0; transform: translateY(10px) scale(0.8); transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.cat-bubble.show { opacity: 1; transform: translateY(0) scale(1); }
+.cat-bubble::after {
+  content: ''; position: absolute; bottom: -9px; left: 22px;
+  border: 9px solid transparent; border-top-color: var(--primary);
+}
+@media (max-width: 767px) {
+  .pet-cat { bottom: 120px; left: 10px; width: 52px; height: 52px; }
+  .cat-bubble { bottom: 178px; left: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="app-wrap">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="app" id="app"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal"></div>
+</div>
+<script>
+/**
+ * 妮妮的工作台 - 内置时政申论数据（2026年7月真实新闻）
+ * 所有条目均来自官方媒体公开报道，标注具体日期与来源
+ * 数据截至 2026年7月26日
+ */
+
+// 2026年7月时政资讯库（真实新闻，含日期与来源）
+const POLITICS_DATA = [
+  // ===== 重要会议与讲话 =====
+  { date:'2026年7月17日', body:'国家主席习近平在上海世界会客厅出席**2026世界人工智能大会暨人工智能全球治理高级别会议**开幕式并发表主旨讲话，题为《携手构建公正合理的全球人工智能治理体系》。习近平提出《全球人工智能治理倡议》，强调坚持"以人为本、智能向善"，反对利用人工智能技术谋取霸权、打压别国发展。（新华社）' },
+  { date:'2026年7月20日', body:'国务院总理李强主持召开国务院常务会议，听取服务业扩能提质和水网、新型电网、算力网、新一代通信网、城市地下管网、物流网等**"六张网"规划建设**督查情况汇报，审议通过《知识产权保护和运用"十五五"规划》，研究优化社会保障体系有关工作。（新华社）' },
+  { date:'2026年7月13日', body:'国务院总理李强主持召开**经济形势专家和企业家座谈会**，听取对当前经济形势和下一步经济工作的意见建议。座谈会上黄汉权、杨志勇、王文、章俊、侯启军、于东来、王志坚、历军等先后发言。李强强调做好下半年经济工作直接关系全年发展目标实现。（新华社）' },
+  { date:'2026年7月10日', body:'国家主席习近平在北京人民大会堂同来华进行国事访问的**纳米比亚总统恩代特瓦**举行会谈。两国元首宣布将中纳关系提升为全面战略合作伙伴关系，并见证签署共建"一带一路"、农业、绿色发展等领域多项双边合作文件。（新华社）' },
+  { date:'2026年7月7日', body:'中共中央总书记、国家主席、中央军委主席习近平对防汛救灾工作作出重要指示。习近平指出，近日广西、湖北、甘肃等地因降雨大风天气，接连发生水库溃坝、山体滑坡等灾害，要求全力搜救失联人员，妥善安置受灾群众，强化隐患排查，确保安全度汛。（新华社）' },
+  { date:'2026年7月1日', body:'庆祝中国共产党成立105周年大会在北京举行。中共中央总书记习近平发表重要讲话，强调要不断创造无愧于时代和人民的新业绩，团结带领全国各族人民为全面推进中国式现代化而努力奋斗。（新华社）' },
+
+  // ===== 经济数据发布 =====
+  { date:'2026年7月15日', body:'国家统计局发布2026年中国经济"半年报"：初步核算，上半年国内生产总值（GDP）**695704亿元**，按不变价格计算同比增长**4.7%**。国家统计局副局长毛盛勇表示，上半年国民经济运行在合理区间，延续总体平稳、向新向优发展态势，展现出强大韧性和活力。（新华社）' },
+  { date:'2026年7月14日', body:'海关总署发布数据：2026年上半年我国货物贸易进出口总值**25.47万亿元**，历史同期首破25万亿元，同比增长**16.9%**，稳居全球货物贸易第一大国地位。其中出口14.73万亿元、增长13.4%，进口10.74万亿元、增长22.1%。（新华社）' },
+  { date:'2026年7月22日', body:'人力资源社会保障部发布数据：2026年上半年全国城镇新增就业**695万人**，同比持平，城镇调查失业率平均值**5.2%**，就业形势保持总体平稳。三项社会保险基金累计结余11.07万亿元。（人民日报）' },
+  { date:'2026年7月20日', body:'国新办举行新闻发布会，工业和信息化部总工程师王卫明介绍：上半年规模以上工业增加值同比增长**5.4%**，工业对经济增长贡献率超35%，前5个月规上工业企业利润总额同比增长18.8%。新能源汽车产销分别完成**743.8万辆和744.6万辆**，同比分别增长6.7%和7.3%。（人民日报）' },
+  { date:'2026年7月24日', body:'国新办举行新闻发布会，农业农村部副部长张兴旺介绍：2026年全国**夏粮产量达3014.9亿斤**，比上年增加20.0亿斤，**首次突破3000亿斤**，实现全年粮食生产首战告捷；夏收油料再获丰收。上半年猪牛羊禽肉产量达5050万吨、同比增长4.3%。（新华社）' },
+  { date:'2026年7月14日', body:'国家能源局消息：继7月10日全国用电负荷首次创历史新高后，7月14日全国用电负荷再创新高，达到**15.51亿千瓦**，当日华中地区及冀南、四川、湖北、湖南4个省级电网用电负荷同时创历史新高。（中新社）' },
+
+  // ===== 重大工程与科技成就 =====
+  { date:'2026年7月24日', body:'我国在东风商业航天创新试验区使用中科宇航自研的**力箭一号遥十五运载火箭**，以"一箭5星"方式，将天仪48星、甘德一号01星、西光贰号03星、吉天星A-04星、应龙风光一号卫星精准送入预定轨道，发射任务圆满成功。力箭一号已累计完成15次发射，建成首个百星民营火箭体系。（央视新闻）' },
+  { date:'2026年7月24日', body:'渝厦高铁重庆菜园坝长江铁路隧道顺利贯通，这是**国内首条穿越长江并实现贯通的高铁隧道**。隧道总长11942米，由中铁二院勘察设计、中铁十四局施工，攻克了高水压江底、薄覆岩禁区、密集城市建筑群等多重世界级难题，为渝厦高铁全线通车打下基础。（新华社）' },
+  { date:'2026年7月17日', body:'2026世界人工智能大会暨人工智能全球治理高级别会议在上海开幕。本届大会以"以仁为本、智能向善"为主题，展览面积超6万平方米，参展企业超500家，涵盖无人机、电动垂直起降飞行器、低空智能联网等领域。2025年我国低空经济规模达5059亿元。（新华社）' },
+
+  // ===== 重要政策发布 =====
+  { date:'2026年7月23日', body:'国务院印发《**全民健身计划（2026—2030年）**》，对"十五五"时期全民健身事业高质量发展作出部署。明确到2030年，人均体育场地面积达4平方米左右，每千人拥有社会体育指导员达3.3名左右，经常参加体育锻炼人数比例达40%左右。（新华社）' },
+  { date:'2026年7月20日', body:'国务院常务会议审议通过《**知识产权保护和运用"十五五"规划**》，指出要抓紧补齐制度短板，加快推动相关法律法规立改废释，完善配套政策措施，持续优化支持全面创新的知识产权保护环境。（新华社）' },
+
+  // ===== 外交与国际事件 =====
+  { date:'2026年7月22日', body:'中共中央政治局委员、外交部长王毅在菲律宾马尼拉出席**中国—东盟外长会**。王毅表示，今年是中国东盟全面战略伙伴关系建立5周年，中国东盟合作走在前、行得稳、步伐快，取得累累硕果，惠及双方20多亿民众。（中新网）' },
+  { date:'2026年7月23日至25日', body:'外交部长王毅赴吉尔吉斯斯坦乔蓬阿塔出席**上海合作组织成员国外长理事会会议**并访问吉尔吉斯斯坦，深化上合组织框架内安全、经济、人文等领域合作。（外交部网站）' },
+  { date:'2026年7月17日', body:'国防部新闻发言人蒋斌大校就近期涉军问题发布消息：第四届中国—东盟防务智库交流活动在云南昆明举行，中国与东盟防务合作持续推进，为地区和平稳定贡献力量。（国防部网）' },
+
+  // ===== 民生与社会治理 =====
+  { date:'2026年7月26日', body:'今年第12号台风"红霞"（强台风级）于3时50分前后在广东省惠州市惠东县平海镇沿海登陆，登陆时中心附近最大风力14级（45米/秒），成为2026年以来登陆我国强度最高的台风。国家防总办公室、应急管理部提前组织会商调度。（新华社）' },
+  { date:'2026年7月24日', body:'国家防总办公室、应急管理部组织第12号台风"红霞"防范应对专题视频会商调度，与气象、水利、自然资源、住建、交通、农业农村等部门联合会商，研究部署防汛防台风工作。（央视新闻）' },
+
+  // ===== 文化体育与社会事件 =====
+  { date:'2026年7月25日', body:'2026年国际射联全项世界杯杭州站女子10米气步枪决赛中，年仅16岁的中国小将**杜雨宸**以**254.6环**成绩夺得冠军，摘得个人首枚国际赛事金牌。队友韩佳予获铜牌。（人民日报）' },
+  { date:'2026年7月26日', body:'中央组织部、人力资源社会保障部送**第十二批中央单位援疆干部人才**抵达乌鲁木齐，开始为期3年的援疆工作。1997年以来，按照党中央统一部署，已先后组织十二批共3万多名干部人才进疆工作。（新华社）' },
+  { date:'2026年7月25日', body:'在韩国釜山召开的联合国教科文组织第48届世界遗产大会上，我国提交的**"景德镇手工瓷业遗存"**项目顺利通过审议，成功列入《世界遗产名录》。至此，**中国世界遗产总数达61项**。该遗存完整保留了10至19世纪手工制瓷全产业链体系，历经11年申遗之路。（央广网）' },
+  { date:'2026年7月26日', body:'**国际红树林中心**第一次理事会会议暨揭牌仪式在广东深圳举行，标志着国际红树林中心从全球倡议正式进入实体化运行阶段。2022年11月中国在《湿地公约》第十四届缔约方大会上提出倡议，2024年11月首批18个意向成员国签署协定。我国红树林面积达**3.17万公顷**，是全球少数红树林面积持续增加的国家之一。（新华社）' },
+  { date:'2026年7月26日', body:'国家林业和草原局、国家发改委、财政部、自然资源部联合印发《**林业草原保护利用"十五五"规划**》，提出到2030年"三北"工程三大标志性战役取得决定性胜利，完成自然保护地整合优化，森林、草原、湿地、荒漠生态系统质量和稳定性全面提升。（新华社）' },
+  { date:'2026年7月26日', body:'央视新闻报道，我国**冷链物流网络加速提质升级**，面对日益增长的食品冷链需求，冷链物流基地陆续启动扩容。福建漳州国家骨干冷链物流基地3个大型冷库加紧建设，为开渔季新鲜水产集中上市做准备，冷链物流保障能力持续增强。（央视新闻）' },
+];
+
+// 申论话题库
+const ESSAY_DATA = [
+  {
+    topic:'全面推进乡村振兴',
+    source:'习近平在中国共产党第二十次全国代表大会上的报告',
+    background:'党的二十大报告明确指出，全面建设社会主义现代化国家，最艰巨最繁重的任务仍然在农村。报告提出坚持农业农村优先发展，坚持城乡融合发展，畅通城乡要素流动，加快建设农业强国。2026年是"十五五"开局之年，全面推进乡村振兴进入新阶段。',
+    core_quote:'坚持农业农村优先发展，坚持城乡融合发展，畅通城乡要素流动。加快建设农业强国，扎实推动乡村产业、人才、文化、生态、组织振兴。',
+    significance:'乡村振兴是实现中华民族伟大复兴的重要支撑，关系到共同富裕目标的实现和农业农村现代化进程。解决好三农问题是全党工作的重中之重。',
+    measures:['发展乡村特色产业，拓宽农民增收致富渠道，完善联农带农机制','加强农村人才队伍建设，实施高素质农民培育计划','推进农村人居环境整治提升，持续开展村庄清洁行动','完善农村基础设施和公共服务，提升教育医疗养老水平','建强农村基层党组织，完善党建引领的乡村治理体系']
+  },
+  {
+    topic:'加快发展新质生产力',
+    source:'习近平在黑龙江考察调研时首次提出（2023年9月）',
+    background:'2023年9月，习近平在黑龙江考察调研期间首次提出新质生产力这一重大概念。此后在中央经济工作会议、中央政治局集体学习等多个重要场合进一步阐述。新质生产力以科技创新为核心，具有高科技、高效能、高质量特征，是推动高质量发展的内在要求。',
+    core_quote:'整合科技创新资源，引领发展战略性新兴产业和未来产业，加快形成新质生产力。',
+    significance:'发展新质生产力是推动高质量发展的内在要求和重要着力点，是抢占未来发展制高点的战略选择，关系到中国式现代化全局。',
+    measures:['强化国家战略科技力量，打好关键核心技术攻坚战','推动战略性新兴产业融合集群发展，打造新增长引擎','加快传统产业高端化、智能化、绿色化转型升级','深化科技体制改革，激发各类人才创新创造活力','扩大高水平对外开放，深度融入全球创新网络']
+  },
+  {
+    topic:'推动经济社会发展全面绿色转型',
+    source:'习近平在全国生态环境保护大会上的重要讲话',
+    background:'生态文明建设是关系中华民族永续发展的根本大计。党的二十大报告将推动绿色发展、促进人与自然和谐共生作为专章部署。习近平强调把建设美丽中国摆在强国建设、民族复兴的突出位置，加快推动发展方式绿色低碳转型。',
+    core_quote:'绿水青山就是金山银山。坚定不移走生态优先、绿色发展之路，推动经济社会发展全面绿色转型。',
+    significance:'绿色转型是实现高质量发展的必由之路，关乎中华民族永续发展和人类命运共同体建设。中国承诺力争2030年前实现碳达峰、2060年前实现碳中和。',
+    measures:['加快产业结构优化调整，大力发展绿色低碳产业','推动能源结构优化，构建清洁低碳安全高效能源体系','健全碳排放权交易市场，完善绿色金融政策支持体系','实施全面节约战略，倡导绿色低碳生活方式','推进山水林田湖草沙一体化保护和系统治理']
+  },
+  {
+    topic:'推进数字中国建设整体布局',
+    source:'中共中央、国务院《数字中国建设整体布局规划》',
+    background:'数字中国建设按照"2522"整体框架推进：夯实数字基础设施和数据资源体系两大基础，推进数字技术与经济、政治、文化、社会、生态文明五位一体深度融合，强化数字技术创新体系和数字安全屏障两大能力。',
+    core_quote:'加快数字中国建设，以数字化培育新动能，用新动能推动新发展，以新发展创造新辉煌。',
+    significance:'建设数字中国是数字时代推进中国式现代化的重要引擎，是构筑国家竞争新优势的有力支撑。数字化正深刻改变生产方式、生活方式和治理方式。',
+    measures:['加快5G网络、千兆光网、算力等数字基础设施建设','做强做优做大数字经济，推动数字产业化和产业数字化','提升数字政府服务效能，深化一网通办一网统管','构建数据基础制度体系，促进数据合规高效流通使用','强化数字技术创新和数字安全保障能力']
+  },
+  {
+    topic:'促进高质量充分就业',
+    source:'习近平在中共中央政治局第十四次集体学习时的重要讲话',
+    background:'促进高质量充分就业是新时代新征程就业工作的新定位、新使命。习近平强调要坚持就业优先战略，千方百计稳住就业基本盘，提高发展的就业带动力，解决好就业总量压力和结构性矛盾。',
+    core_quote:'促进高质量充分就业，是新时代新征程就业工作的新定位、新使命。就业是最基本的民生，事关人民群众切身利益，事关经济社会健康发展，事关国家长治久安。',
+    significance:'就业是最基本的民生工程、民心工程。当前我国就业总量压力依然存在，结构性就业矛盾日益突出，促进高质量充分就业是推动共同富裕的重要基础。',
+    measures:['坚持就业优先战略，强化财政货币产业等政策协同支持就业','健全终身职业技能培训制度，缓解结构性就业矛盾','完善高校毕业生、农民工、退役军人等重点群体就业支持体系','鼓励创业带动就业，优化创业环境，激发市场主体活力','加强灵活就业和新就业形态劳动者权益保障']
+  },
+  {
+    topic:'健全全面从严治党体系',
+    source:'习近平在二十届中央纪委三次全会上的重要讲话',
+    background:'全面从严治党永远在路上。党的二十大报告指出全面从严治党是党永葆生机活力、走好新的赶考之路的必由之路。习近平强调推进党的自我革命"九个以"实践要求，清醒反腐、有腐必反。',
+    core_quote:'经过不懈努力，党找到了自我革命这一跳出治乱兴衰历史周期率的第二个答案。全面从严治党永远在路上，党的自我革命永远在路上。',
+    significance:'健全全面从严治党体系是新时代党的建设鲜明主题。坚持全面从严治党，才能确保党不变质、不变色、不变味，始终成为中国特色社会主义事业坚强领导核心。',
+    measures:['坚持不懈用习近平新时代中国特色社会主义思想凝心铸魂','健全党统一领导、全面覆盖、权威高效的监督体系','锲而不舍落实中央八项规定精神，持续纠治四风','全面加强党的纪律建设，深化党纪学习教育','一体推进不敢腐、不能腐、不想腐，坚决铲除腐败土壤']
+  },
+  {
+    topic:'扎实推进共同富裕',
+    source:'习近平在中央财经委员会第十次会议上的重要讲话',
+    background:'共同富裕是社会主义本质要求，是中国式现代化重要特征。习近平强调共同富裕是全体人民共同富裕，是人民群众物质生活和精神生活都富裕，要分阶段促进共同富裕。',
+    core_quote:'共同富裕是社会主义的本质要求，是中国式现代化的重要特征。我们说的共同富裕是全体人民共同富裕，是人民群众物质生活和精神生活都富裕。',
+    significance:'实现共同富裕不仅是经济问题，而且是关系党的执政基础的重大政治问题。在高质量发展中促进共同富裕，正确处理效率和公平的关系，具有重大现实意义和深远历史意义。',
+    measures:['坚持以人民为中心的发展思想，在高质量发展中促进共同富裕','完善收入分配制度，提高劳动报酬在初次分配中的比重','健全多层次社会保障体系，织密社会保障安全网','促进基本公共服务均等化，缩小城乡区域发展差距','鼓励勤劳创新致富，畅通向上流动通道']
+  },
+  {
+    topic:'建设中华民族现代文明',
+    source:'习近平在文化传承发展座谈会上的重要讲话',
+    background:'习近平提出"两个结合"特别是"第二个结合"重大论断，强调在新的起点上继续推动文化繁荣、建设文化强国、建设中华民族现代文明，是新时代新的文化使命。文化自信是更基础、更广泛、更深厚的自信。',
+    core_quote:'在新的起点上继续推动文化繁荣、建设文化强国、建设中华民族现代文明，是我们在新时代新的文化使命。',
+    significance:'文化自信是更基础、更广泛、更深厚的自信。推进文化自信自强，才能铸就社会主义文化新辉煌，为中华民族伟大复兴提供强大精神力量。',
+    measures:['建设具有强大凝聚力和引领力的社会主义意识形态','广泛践行社会主义核心价值观，融入法治建设和社会治理','繁荣发展文化事业和文化产业，实施文化惠民工程','增强中华文明传播力影响力，讲好中国故事','推动中华优秀传统文化创造性转化、创新性发展']
+  },
+  {
+    topic:'完善中国特色社会主义法治体系',
+    source:'习近平关于全面依法治国系列重要讲话',
+    background:'党的二十大报告将坚持全面依法治国、推进法治中国建设作为专章部署，强调全面依法治国是国家治理的一场深刻革命，关系党执政兴国、人民幸福安康、党和国家长治久安。',
+    core_quote:'全面依法治国是国家治理的一场深刻革命，关系党执政兴国，关系人民幸福安康，关系党和国家长治久安。',
+    significance:'法治是国家治理体系和治理能力现代化的重要标志。在法治轨道上全面建设社会主义现代化国家，是实现国家长治久安的根本保障。',
+    measures:['加强宪法实施和监督，维护宪法权威和尊严','推进科学立法、民主立法、依法立法，完善法律体系','深化行政执法体制改革，全面推进严格规范公正文明执法','深化司法体制综合配套改革，让人民群众感受到公平正义','建设覆盖城乡的现代公共法律服务体系，推进全民守法']
+  },
+  {
+    topic:'加快构建新发展格局',
+    source:'习近平关于构建新发展格局系列重要讲话',
+    background:'加快构建以国内大循环为主体、国内国际双循环相互促进的新发展格局，是一项关系我国发展全局的重大战略任务。习近平强调要把握未来发展主动权，加快建设全国统一大市场。',
+    core_quote:'加快构建新发展格局，着力推动高质量发展。必须完整、准确、全面贯彻新发展理念，坚持社会主义市场经济改革方向。',
+    significance:'构建新发展格局是把握未来发展主动权的战略性布局，是应对错综复杂国际环境、推动高质量发展的战略选择，事关中国式现代化全局。',
+    measures:['建设全国统一大市场，破除地方保护和市场分割','深化要素市场化改革，建设高标准市场体系','推进高水平对外开放，稳步扩大制度型开放','加快科技自立自强，突破关键核心技术瓶颈','提升产业链供应链韧性和安全水平']
+  },
+];
+
+/**
+ * 根据日期生成每日内容（纯客户端，不依赖后端）
+ */
+function generateBuiltinDaily(dateStr) {
+  const seed = dateStr.split('-').reduce((a, b) => a * 1000 + parseInt(b), 0);
+
+  const pool = POLITICS_DATA.slice();
+  const politics = [];
+  let idx = seed;
+  while (politics.length < 5 && pool.length > 0) {
+    idx = (idx * 9301 + 49297) % 233280;
+    const pickIdx = idx % pool.length;
+    const item = pool.splice(pickIdx, 1)[0];
+    let category = '国内';
+    const catKw = {
+      '经济': ['经济','GDP','增长','产业','金融','贸易','消费','投资','企业','市场','财政','货币','就业','进出口','海关','工业'],
+      '科技': ['科技','航天','卫星','火箭','人工智能','5G','芯片','新能源','技术','创新','数字','互联网','量子','算力','低空'],
+      '民生': ['民生','教育','医疗','养老','住房','就业','社保','医保','学校','收入','卫生','台风','防汛','健身'],
+      '法治': ['法律','法规','司法','法院','检察院','公安','依法','违法','犯罪','法治','国防','军事','知识产权'],
+      '生态': ['生态','环保','碳','绿色','环境','气候','污染','排放','美丽中国'],
+      '外交': ['外交','国际','一带一路','人类命运共同体','全球','世界','丝路','金砖','中欧','中法','上合','东盟','王毅','纳米比亚'],
+    };
+    for (const [cat, kws] of Object.entries(catKw)) {
+      if (kws.some(kw => item.body.includes(kw))) { category = cat; break; }
+    }
+    politics.push({ category, body: item.date + '，' + item.body, quiz: null });
+  }
+
+  const essayIdx = seed % ESSAY_DATA.length;
+
+  return {
+    date: dateStr,
+    politics,
+    essay: ESSAY_DATA[essayIdx],
+    generated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * 好词好句默认库（用于"好词好句积累"子模块每日推送 + 用户可手动补充）
+ * 每条带 date 字段，DailyRead 按当天日期轮换推送一条
+ */
+const GOODWORDS_DEFAULT = [
+  { id:'gw1', title:'民生为本', content:'治国有常，而利民为本。——《淮南子》\n解读：治国理政的根本在于便民利民，申论可用于"以人民为中心""民生保障""共同富裕"等主题。', date:'2026-07-28' },
+  { id:'gw2', title:'实干兴邦', content:'空谈误国，实干兴邦。\n解读：强调务实作风，适用于"作风建设""抓落实""反对形式主义官僚主义"等话题。', date:'2026-07-28' },
+  { id:'gw3', title:'改革创新', content:'惟改革者进，惟创新者强，惟改革创新者胜。\n解读：适用于"全面深化改革""科技创新""高质量发展""新质生产力"主题。', date:'2026-07-28' },
+  { id:'gw4', title:'绿水青山', content:'绿水青山就是金山银山。\n解读：生态文明核心论断，适用于"绿色发展""双碳目标""美丽中国""人与自然和谐共生"主题。', date:'2026-07-28' },
+  { id:'gw5', title:'天下为公', content:'大道之行也，天下为公。——《礼记·礼运》\n解读：适用于"人类命运共同体""全球治理""一带一路""文明交流互鉴"主题。', date:'2026-07-28' },
+  { id:'gw6', title:'居安思危', content:'备豫不虞，为国常道。——《贞观政要》\n解读：强调底线思维与风险意识，适用于"国家安全""防范化解重大风险""粮食安全"等话题。', date:'2026-07-28' },
+  { id:'gw7', title:'利民之事', content:'利民之事，丝发必兴；厉民之事，毫末必去。——清·万斯大\n解读：凡对百姓有利的再小也要做，凡扰民害民的再小也要除，适用于"优化营商环境""惠民政策"。', date:'2026-07-28' },
+];
+
+/**
+ * 公务员常识题库（每日必读·常识刷题）
+ */
+const COMMON_SENSE = [
+  { q: '关于"新发展格局"，下列表述正确的是？', opts: ['以国际大循环为主体','以国内大循环为主体、国内国际双循环相互促进','以出口为导向的外向型经济','实行闭关锁国政策'], answer: 1, tip: '加快构建以国内大循环为主体、国内国际双循环相互促进的新发展格局，是关系我国发展全局的重大战略任务。' },
+  { q: '我国提出"碳达峰、碳中和"目标，其中"碳中和"是指？', opts: ['二氧化碳排放量达到峰值','二氧化碳排放量与吸收量相互抵消','完全不排放二氧化碳','碳排放增速为零'], answer: 1, tip: '碳中和是指通过植树造林、节能减排等形式，抵消自身产生的二氧化碳排放量，实现正负抵消、相对"零排放"。' },
+  { q: '全过程人民民主是最广泛的民主，其重大理念由谁提出？', opts: ['邓小平','习近平','江泽民','胡锦涛'], answer: 1, tip: '全过程人民民主是社会主义民主政治的本质属性，是最广泛、最真实、最管用的民主，是习近平总书记提出的重大理念。' },
+  { q: '中国式现代化的本质要求不包括下列哪项？', opts: ['坚持中国共产党领导','实现高质量发展','走和平发展道路','照搬西方现代化模式'], answer: 3, tip: '中国式现代化是中国共产党领导的社会主义现代化，既有各国现代化的共同特征，更有基于国情的中国特色，绝不照搬西方模式。' },
+  { q: '《中华人民共和国民法典》自何时起施行？', opts: ['2019年1月1日','2020年1月1日','2021年1月1日','2022年1月1日'], answer: 2, tip: '《民法典》是新中国成立以来第一部以"法典"命名的法律，自2021年1月1日起施行，被誉为"社会生活的百科全书"。' },
+  { q: '全面推进乡村振兴，要牢牢守住的两条底线是？', opts: ['发展和生态','粮食安全和不发生规模性返贫','环境和耕地','收入和医疗'], answer: 1, tip: '全面推进乡村振兴，要牢牢守住保障国家粮食安全和不发生规模性返贫两条底线。' },
+  { q: '"放管服"改革中的"服"是指？', opts: ['服务','服从','执法','监管'], answer: 0, tip: '"放管服"指简政放权、放管结合、优化服务，"服"即优化政府服务，打造市场化法治化国际化营商环境。' },
+  { q: '高质量发展的根本目的是？', opts: ['经济增速最大化','满足人民日益增长的美好生活需要','扩大出口规模','提高税收收入'], answer: 1, tip: '高质量发展是能够很好满足人民日益增长的美好生活需要的发展，是体现新发展理念的发展。' },
+  { q: '我国根本政治制度是？', opts: ['中国共产党领导的多党合作和政治协商制度','人民代表大会制度','基层群众自治制度','民族区域自治制度'], answer: 1, tip: '人民代表大会制度是我国的根本政治制度，是人民当家作主的重要途径和最高实现形式。' },
+  { q: '"两个确立"是指确立习近平同志党中央的核心、全党的核心地位，以及确立？', opts: ['中国特色社会主义理论体系指导地位','习近平新时代中国特色社会主义思想的指导地位','改革开放的基本国策','全面建设社会主义现代化国家战略'], answer: 1, tip: '"两个确立"对新时代党和国家事业发展、对推进中华民族伟大复兴历史进程具有决定性意义。' }
+];
+
+</script>
+<script>
 /* ============================================
    妮妮的工作台  —  app.js
    纯本地存储 PWA，响应式分栏布局
@@ -2245,3 +3282,94 @@ const PetCat = {
   PetCat.init();
   Nav.go('home');
 })();
+
+</script>
+
+<!-- 哆啦A梦 SVG -->
+<svg class="doraemon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="60" cy="70" rx="42" ry="44" fill="#4a9ed6"/>
+  <ellipse cx="60" cy="55" rx="38" ry="36" fill="white"/>
+  <ellipse cx="44" cy="48" rx="10" ry="12" fill="white" stroke="#333" stroke-width="1.5"/>
+  <ellipse cx="76" cy="48" rx="10" ry="12" fill="white" stroke="#333" stroke-width="1.5"/>
+  <circle cx="47" cy="46" r="5" fill="#333"/>
+  <circle cx="73" cy="46" r="5" fill="#333"/>
+  <circle cx="48" cy="44" r="1.5" fill="white"/>
+  <circle cx="74" cy="44" r="1.5" fill="white"/>
+  <circle cx="60" cy="56" r="6" fill="#e74c3c"/>
+  <circle cx="58" cy="54" r="1.5" fill="white"/>
+  <path d="M40 64 Q60 78 80 64" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="52" x2="38" y2="58" stroke="#333" stroke-width="1.2"/>
+  <line x1="18" y1="60" x2="37" y2="62" stroke="#333" stroke-width="1.2"/>
+  <line x1="22" y1="68" x2="38" y2="66" stroke="#333" stroke-width="1.2"/>
+  <line x1="100" y1="52" x2="82" y2="58" stroke="#333" stroke-width="1.2"/>
+  <line x1="102" y1="60" x2="83" y2="62" stroke="#333" stroke-width="1.2"/>
+  <line x1="98" y1="68" x2="82" y2="66" stroke="#333" stroke-width="1.2"/>
+  <circle cx="60" cy="78" r="7" fill="#f1c40f"/>
+  <line x1="60" y1="84" x2="60" y2="87" stroke="#333" stroke-width="1"/>
+  <circle cx="60" cy="87" r="1.5" fill="#333"/>
+  <path d="M32 72 Q60 90 88 72" fill="white" stroke="#ddd" stroke-width="1"/>
+</svg>
+<div class="doraemon-bell"></div>
+
+<!-- 蜡笔小新 SVG -->
+<svg class="shinchan" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="50" cy="52" rx="34" ry="38" fill="#f5d5a0"/>
+  <path d="M18 32 Q30 14 50 16 Q70 14 82 32" fill="#333"/>
+  <rect x="28" y="34" width="14" height="5" rx="2.5" fill="#333"/>
+  <rect x="58" y="34" width="14" height="5" rx="2.5" fill="#333"/>
+  <circle cx="36" cy="44" r="6" fill="#333"/>
+  <circle cx="64" cy="44" r="6" fill="#333"/>
+  <circle cx="34" cy="42" r="1.8" fill="white"/>
+  <circle cx="62" cy="42" r="1.8" fill="white"/>
+  <path d="M38 58 Q50 66 62 58" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="28" cy="54" r="4" fill="#ff9999" opacity="0.4"/>
+  <circle cx="72" cy="54" r="4" fill="#ff9999" opacity="0.4"/>
+  <rect x="34" y="68" width="32" height="24" rx="4" fill="#e74c3c"/>
+  <rect x="34" y="68" width="32" height="4" rx="2" fill="#f1c40f"/>
+</svg>
+<div class="shinchan-cape"></div>
+
+<div class="sparkle">✨</div>
+<div class="sparkle">💫</div>
+<div class="sparkle">⭐</div>
+<div class="sparkle">🌟</div>
+
+<!-- 陪伴猫咪电子宠物 -->
+<div class="pet-cat" id="petCat">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="60" cy="66" rx="42" ry="38" fill="#f4a261"/>
+    <polygon points="26,34 44,56 16,58" fill="#f4a261"/>
+    <polygon points="94,34 76,56 104,58" fill="#f4a261"/>
+    <polygon points="29,36 42,54 20,55" fill="#e76f51"/>
+    <polygon points="91,36 78,54 100,55" fill="#e76f51"/>
+    <ellipse cx="60" cy="72" rx="32" ry="28" fill="#ffe0c2"/>
+    <circle cx="46" cy="62" r="7" fill="#3e4a3e"/>
+    <circle cx="74" cy="62" r="7" fill="#3e4a3e"/>
+    <circle cx="48" cy="60" r="2" fill="#fff"/>
+    <circle cx="76" cy="60" r="2" fill="#fff"/>
+    <polygon points="57,74 63,74 60,80" fill="#e76f51"/>
+    <path d="M60 80 Q54 88 48 84 M60 80 Q66 88 72 84" fill="none" stroke="#3e4a3e" stroke-width="2" stroke-linecap="round"/>
+    <line x1="22" y1="74" x2="40" y2="72" stroke="#caa" stroke-width="1.5"/>
+    <line x1="22" y1="80" x2="40" y2="78" stroke="#caa" stroke-width="1.5"/>
+    <line x1="98" y1="74" x2="80" y2="72" stroke="#caa" stroke-width="1.5"/>
+    <line x1="98" y1="80" x2="80" y2="78" stroke="#caa" stroke-width="1.5"/>
+    <circle cx="38" cy="76" r="4" fill="#ffb3a7" opacity="0.5"/>
+    <circle cx="82" cy="76" r="4" fill="#ffb3a7" opacity="0.5"/>
+  </svg>
+</div>
+<div class="cat-bubble" id="catBubble"></div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  const swB64 = "Y29uc3QgQ0FDSEUgPSAnbmluaS12MTEnOwpjb25zdCBGSUxFUyA9IFsKICAnLi8nLCAnLi9pbmRleC5odG1sJywgJy4vYXBwLmpzJywgJy4vYnVpbHRpbi1kYXRhLmpzJywKICAnLi9tYW5pZmVzdC5qc29uJywgJy4vaWNvbi12Mi0xOTIucG5nJywgJy4vaWNvbi12Mi01MTIucG5nJwpdOwoKc2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgKGUpID0+IHsKICBlLndhaXRVbnRpbCgKICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGMgPT4gYy5hZGRBbGwoRklMRVMpLmNhdGNoKCgpID0+IHt9KSkKICApOwogIHNlbGYuc2tpcFdhaXRpbmcoKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2FjdGl2YXRlJywgKGUpID0+IHsKICBlLndhaXRVbnRpbCgKICAgIGNhY2hlcy5rZXlzKCkudGhlbihrZXlzID0+CiAgICAgIFByb21pc2UuYWxsKGtleXMuZmlsdGVyKGsgPT4gayAhPT0gQ0FDSEUpLm1hcChrID0+IGNhY2hlcy5kZWxldGUoaykpKQogICAgKS50aGVuKCgpID0+IHNlbGYuY2xpZW50cy5jbGFpbSgpKQogICk7Cn0pOwoKLy8g572R57uc5LyY5YWI562W55Wl77ya6IGU572R5pe25ou/5pyA5paw5pWw5o2u5bm25pu05paw57yT5a2Y77yM56a757q/5pe255So57yT5a2YCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLCAoZSkgPT4gewogIGlmIChlLnJlcXVlc3QubWV0aG9kICE9PSAnR0VUJykgcmV0dXJuOwogIGUucmVzcG9uZFdpdGgoCiAgICBmZXRjaChlLnJlcXVlc3QpLnRoZW4obmV0d29ya1Jlc3AgPT4gewogICAgICBpZiAobmV0d29ya1Jlc3AgJiYgbmV0d29ya1Jlc3Auc3RhdHVzID09PSAyMDApIHsKICAgICAgICBjb25zdCBjb3B5ID0gbmV0d29ya1Jlc3AuY2xvbmUoKTsKICAgICAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihjID0+IGMucHV0KGUucmVxdWVzdCwgY29weSkpLmNhdGNoKCgpID0+IHt9KTsKICAgICAgfQogICAgICByZXR1cm4gbmV0d29ya1Jlc3A7CiAgICB9KS5jYXRjaCgoKSA9PgogICAgICBjYWNoZXMubWF0Y2goZS5yZXF1ZXN0KS50aGVuKGNhY2hlZCA9PgogICAgICAgIGNhY2hlZCB8fCBjYWNoZXMubWF0Y2goJy4vaW5kZXguaHRtbCcpCiAgICAgICkKICAgICkKICApOwp9KTsK";
+  const bytes = Uint8Array.from(atob(swB64), c => c.charCodeAt(0));
+  const swCode = new TextDecoder("utf-8").decode(bytes);
+  const blob = new Blob([swCode], {type: "application/javascript"});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl)
+    .then(reg => console.log("SW registered (standalone):", reg.scope))
+    .catch(err => console.log("SW failed:", err));
+}
+</script>
+</body>
+</html>
