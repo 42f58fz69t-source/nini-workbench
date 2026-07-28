@@ -193,7 +193,7 @@ const Nav = {
     document.body.classList.toggle('sb-open');
   },
   closeSidebarMobile() {
-    if (!isWide()) document.body.classList.remove('sb-open');
+    document.body.classList.remove('sb-open');
   },
   renderBottomNav() {
     return '';
