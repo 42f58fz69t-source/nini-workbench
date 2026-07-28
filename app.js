@@ -89,7 +89,7 @@ const MODULES = [
   { id: 'home', icon: ICONS.home, color: '#7cb342', title: '首页', desc: '今日概览', group: 'main', builtIn: true },
   { id: 'donelist', icon: ICONS.list, color: '#66bb6a', title: 'Donelist', desc: '今日待办+回溯', group: 'daily', builtIn: true },
   { id: 'dailyread', icon: ICONS.news, color: '#4fc3f7', title: '每日必读', desc: '时政+申论背诵', group: 'study', builtIn: true, badge: '新' },
-  { id: 'study', icon: ICONS.book, color: '#0ea5e9', title: '自考备考', desc: () => `${DB.get('subjects', []).length}科·进度·重点难点`, group: 'study', builtIn: true },
+  { id: 'study', icon: ICONS.book, color: '#0ea5e9', title: '自考备考', desc: () => { const n = DB.get('subjects', []).length; return `${n}科 · 每日一练 · 本期3科`; }, group: 'study', builtIn: true },
   { id: 'sleep', icon: ICONS.moon, color: '#ab47bc', title: '作息打卡', desc: '睡眠+精力评分', group: 'health', builtIn: true },
   { id: 'sport', icon: ICONS.run, color: '#ef5350', title: '运动记录', desc: '运动类型+时长', group: 'health', builtIn: true },
   { id: 'cycle', icon: ICONS.heart, color: '#ec407a', title: '生理期管理', desc: '日历+智能预测', group: 'health', builtIn: true },
@@ -680,30 +680,86 @@ const DailyRead = {
    STUDY / 自考备考 — 14 科
    ============================================ */
 const Study = {
+  // 海南大学 自考法学本科（030101K）：免考 2/3/4 后剩余 14 科（不含毕业论文）
+  // 本期报考（10月）：合同法 / 犯罪学 / 侵权责任法
   DEFAULT_SUBJECTS: [
-    '合同法',
-    '侵权责任法',
-    '犯罪学',
+    { name: '习近平新时代中国特色社会主义思想概论', isActive: false, examDate: '' },
+    { name: '国际法', isActive: false, examDate: '' },
+    { name: '国际经济法', isActive: false, examDate: '' },
+    { name: '合同法', isActive: true, examDate: '2026-10-24' },
+    { name: '公司法', isActive: false, examDate: '' },
+    { name: '侵权责任法', isActive: true, examDate: '2026-10-24' },
+    { name: '犯罪学', isActive: true, examDate: '2026-10-24' },
+    { name: '保险法', isActive: false, examDate: '' },
+    { name: '环境资源法学', isActive: false, examDate: '' },
+    { name: '商法', isActive: false, examDate: '' },
+    { name: '劳动和社会保障法', isActive: false, examDate: '' },
+    { name: '国际私法', isActive: false, examDate: '' },
+    { name: '知识产权法', isActive: false, examDate: '' },
+    { name: '物权法', isActive: false, examDate: '' },
   ],
+  // 合并迁移：保留已有科目的日志/进度，补齐缺失默认科目；保留用户自定义科目
   ensureSubjects() {
-    let subs = DB.get('subjects', null);
-    // 如果旧数据是14科（默认科目数变了），自动重置为新的默认科目
-    if (!subs || subs.length > 10) {
-      subs = Study.DEFAULT_SUBJECTS.map((name, i) => ({
-        id: uid(), name, order: i, examDate: '', targetHours: 0, progress: 0, logs: [], createdAt: Date.now(),
+    const stored = DB.get('subjects', null);
+    const defaults = Study.DEFAULT_SUBJECTS;
+    if (!stored || !stored.length) {
+      const fresh = defaults.map((d, i) => ({
+        id: uid(), name: d.name, order: i, isActive: !!d.isActive, examDate: d.examDate || '', targetHours: 0, progress: 0, logs: [], createdAt: Date.now(),
       }));
-      DB.set('subjects', subs);
+      DB.set('subjects', fresh);
+      return fresh;
     }
-    return subs;
+    const byName = {};
+    stored.forEach(s => { byName[s.name] = s; });
+    const merged = defaults.map((d, i) => {
+      const ex = byName[d.name];
+      if (ex) {
+        ex.isActive = !!d.isActive;
+        if (ex.examDate === undefined) ex.examDate = '';
+        if (ex.logs === undefined) ex.logs = [];
+        return ex;
+      }
+      return { id: uid(), name: d.name, order: i, isActive: !!d.isActive, examDate: d.examDate || '', targetHours: 0, progress: 0, logs: [], createdAt: Date.now() };
+    });
+    // 保留用户自定义的、不在默认清单里的科目
+    stored.forEach(s => {
+      if (!defaults.some(d => d.name === s.name)) {
+        s.isActive = s.isActive || false;
+        if (s.logs === undefined) s.logs = [];
+        merged.push(s);
+      }
+    });
+    DB.set('subjects', merged);
+    return merged;
+  },
+  // 连续学习天数（按学习记录日期计算）
+  streak(subs) {
+    const days = new Set();
+    subs.forEach(s => (s.logs || []).forEach(l => { if (l.date) days.add(l.date); }));
+    if (!days.size) return 0;
+    const iso = dt => { const y = dt.getFullYear(); const m = String(dt.getMonth() + 1).padStart(2, '0'); const d = String(dt.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; };
+    let dt = new Date();
+    if (!days.has(iso(dt))) dt.setDate(dt.getDate() - 1); // 今天还没学但昨天有，从昨天起算
+    let n = 0;
+    while (days.has(iso(dt))) { n++; dt.setDate(dt.getDate() - 1); }
+    return n;
   },
   render() {
     const subs = Study.ensureSubjects();
+    Study._off = 0;
+    Study._cur = studyDailyContent(todayStr(), 0);
     const allLogs = subs.flatMap(s => s.logs || []);
     const totalHours = allLogs.reduce((s, l) => s + (l.hours || 0), 0);
     const totalSessions = allLogs.length;
-    const reviewedCount = allLogs.filter(l => l.reviewed).length;
     const avgProgress = subs.length ? Math.round(subs.reduce((s, x) => s + (x.progress || 0), 0) / subs.length) : 0;
-    const upcoming = subs.filter(s => s.examDate).map(s => ({ s, days: Math.ceil((new Date(s.examDate) - new Date(new Date().toDateString())) / 86400000) })).filter(x => x.days >= 0).sort((a, b) => a.days - b.days)[0];
+    const streak = Study.streak(subs);
+    const active = subs.filter(s => s.isActive);
+    const nearest = active.filter(s => s.examDate).map(s => ({ s, days: Math.ceil((new Date(s.examDate) - new Date(new Date().toDateString())) / 86400000) })).filter(x => x.days >= 0).sort((a, b) => a.days - b.days)[0];
+    const bmCount = DB.get('studyBookmarks', []).length;
+    const diffCount = subs.reduce((n, s) => n + (s.logs || []).filter(l => l.difficulty && l.difficulty.trim()).length, 0);
+    const reviewedCount = allLogs.filter(l => l.reviewed).length;
+
+    const activeCard = active.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${active.map(s => `<span class="badge fire">🔥 本期 · ${esc(s.name)}</span>`).join('')}</div>${nearest ? `<div style="margin-top:8px;font-size:13px;color:var(--warning);font-weight:700">⏰ 最近考试：${esc(nearest.s.name)} 还有 ${nearest.days} 天（${fmtDate(nearest.s.examDate)}）</div>` : ''}` : '';
 
     const statCard = `
       <div class="card">
@@ -712,12 +768,14 @@ const Study = {
           <div class="stat-box"><div class="num">${totalHours}</div><div class="lbl">累计学时</div></div>
           <div class="stat-box"><div class="num">${totalSessions}</div><div class="lbl">学习次数</div></div>
           <div class="stat-box"><div class="num">${avgProgress}%</div><div class="lbl">平均进度</div></div>
+          <div class="stat-box"><div class="num">${streak}</div><div class="lbl">连续学习(天)</div></div>
         </div>
-        ${upcoming ? `<div style="margin-top:12px;padding:10px 12px;background:#fff3e0;border-radius:10px;font-size:13px">
-          <span style="color:var(--warning);font-weight:700">⏰ ${esc(upcoming.s.name)}</span>
-          <span style="color:var(--text-2)"> · ${fmtDate(upcoming.s.examDate)} · </span>
-          <span style="color:${upcoming.days < 14 ? 'var(--danger)' : 'var(--warning)'};font-weight:700">还有 ${upcoming.days} 天</span>
-        </div>` : ''}
+        ${activeCard}
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn secondary" onclick="Study.openFlashcard()">🃏 随机抽背</button>
+          <button class="btn secondary" onclick="Study.renderBookmarks()">📕 错题本(${bmCount})</button>
+          <button class="btn secondary" onclick="Study.renderKeyDiff()">📌 重点难点(${diffCount})</button>
+        </div>
         ${reviewedCount ? `<div style="margin-top:8px;font-size:12px;color:var(--text-2)">已标记复习 ${reviewedCount} 条记录</div>` : ''}
       </div>`;
 
@@ -731,7 +789,7 @@ const Study = {
       return `<div class="card" onclick="Study.open('${s.id}')">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
           <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:700">${esc(s.name)}</div>
+            <div style="font-size:15px;font-weight:700">${esc(s.name)} ${s.isActive ? '<span class="badge fire" style="font-size:10px">本期</span>' : ''}</div>
             <div class="sub" style="font-size:11px;color:var(--text-2);margin-top:3px">
               ${sessions} 次 · ${hours}h ${lastLog ? ' · 最近 ' + fmtDate(lastLog.date) : ' · 还没开始'}
             </div>
@@ -745,12 +803,120 @@ const Study = {
       </div>`;
     }).join('');
 
-    return statCard + list + `
+    return statCard
+      + `<div id="studyDaily">${Study.renderDaily(0)}</div>`
+      + list
+      + `
       <button class="btn secondary" onclick="Study.addSubject()" style="margin-top:8px">+ 添加自定义科目</button>
       <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:12px;padding:0 16px;line-height:1.6">
-        已预置 3 个自考科目，点击任意科目可记录学习内容、时长、进度与重点难点。
+        已内置 14 科（免考 3 科后）。每日一练按日期自动轮换；本期重点：合同法 / 犯罪学 / 侵权责任法。
       </div>`;
   },
+  renderDaily(offset) {
+    const c = studyDailyContent(todayStr(), offset);
+    const m = c.question;
+    const optsHtml = m ? m.opts.map((o, i) => `<div class="opt">${String.fromCharCode(65 + i)}. ${esc(o)}</div>`).join('') : '';
+    const ansHtml = m ? `<div class="daily-answer" id="dailyAns" style="display:none;margin-top:8px;padding:10px 12px;background:#f5f9f5;border-radius:8px;font-size:13px;white-space:pre-wrap">正确答案：${String.fromCharCode(65 + m.answer)}\n${esc(m.tip)}</div>` : '';
+    return `
+      <div class="card daily-card">
+        <div class="card-title"><span>📅 每日一练 · ${esc(c.subject)}</span><span class="badge blue">${fmtDate(todayStr())}</span></div>
+        ${m ? `<div style="font-weight:700;margin-bottom:8px">${esc(m.q)}</div>${optsHtml}${ansHtml}
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn secondary" onclick="Study.toggleAnswer()">显示答案/解析</button>
+            <button class="btn secondary" onclick="Study.moreDaily()">换一题</button>
+            <button class="btn secondary" onclick="Study.bookmark()">★ 收藏</button>
+          </div>` : `<div class="empty"><div class="emoji">📖</div><div>今日暂无推送</div></div>`}
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)">
+          <div style="font-size:12px;color:var(--text-2);margin-bottom:4px">💡 考点速记</div>
+          <div style="font-size:13px;line-height:1.6">${esc(c.quick)}</div>
+        </div>
+        ${c.law ? `<div style="margin-top:10px;font-size:12px;color:var(--text-2);background:#f5f9f5;padding:8px 10px;border-radius:8px;line-height:1.6">📜 ${esc(c.law)}</div>` : ''}
+      </div>`;
+  },
+  toggleAnswer() {
+    const el = document.getElementById('dailyAns');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  },
+  moreDaily() {
+    Study._off = (Study._off || 0) + 1;
+    Study._cur = studyDailyContent(todayStr(), Study._off);
+    const el = document.getElementById('studyDaily');
+    if (el) el.innerHTML = Study.renderDaily(Study._off);
+  },
+  bookmark() {
+    const c = Study._cur;
+    if (!c) return;
+    const bm = DB.get('studyBookmarks', []);
+    const key = c.question ? c.question.q : c.quick;
+    if (bm.some(b => b.q === key)) return toast('已在错题本中');
+    bm.unshift({
+      id: uid(), subject: c.subject,
+      q: c.question ? c.question.q : c.quick,
+      a: c.question ? ('正确答案：' + String.fromCharCode(65 + c.question.answer) + '\n' + c.question.tip) : '',
+      note: c.quick, addedAt: Date.now(),
+    });
+    DB.set('studyBookmarks', bm);
+    toast('★ 已收藏到错题本');
+  },
+  renderBookmarks() {
+    const bm = DB.get('studyBookmarks', []);
+    const html = bm.length ? bm.map(b => `
+      <div class="list-item">
+        <div class="main">
+          <div class="title">${esc(b.q)}</div>
+          <div class="sub">${esc(b.subject)}${b.a ? ' · 已收藏' : ''}</div>
+          ${b.a ? `<div style="font-size:12px;color:var(--text-2);margin-top:4px;white-space:pre-wrap">${esc(b.a)}</div>` : ''}
+        </div>
+        <button class="task-delete" onclick="Study.delBookmark('${b.id}')">${ICONS.trash}</button>
+      </div>`).join('') : `<div class="empty"><div class="emoji">📕</div><div>错题本还是空的<br>在「每日一练」点 ★ 收藏吧</div></div>`;
+    openModal(`<h3>📕 错题本 / 收藏夹（${bm.length}）</h3>${html}<div style="font-size:11px;color:var(--text-3);margin-top:8px">收藏来自每日一练，便于考前集中回看易错点。</div>`);
+  },
+  delBookmark(id) {
+    DB.set('studyBookmarks', DB.get('studyBookmarks', []).filter(b => b.id !== id));
+    Study.renderBookmarks();
+  },
+  renderKeyDiff() {
+    const subs = Study.ensureSubjects();
+    const items = [];
+    subs.forEach(s => (s.logs || []).forEach(l => { if (l.difficulty && l.difficulty.trim()) items.push({ subject: s.name, content: l.content, diff: l.difficulty, date: l.date }); }));
+    items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const html = items.length ? items.map(it => `
+      <div class="list-item">
+        <div class="main">
+          <div class="title">${esc(it.diff)}</div>
+          <div class="sub">${esc(it.subject)} · ${fmtDate(it.date)}${it.content ? ' · ' + esc(it.content) : ''}</div>
+        </div>
+      </div>`).join('') : `<div class="empty"><div class="emoji">📌</div><div>还没有记录重点难点<br>在科目详情记学习时写下「重点难点/心得」</div></div>`;
+    openModal(`<h3>📌 重点难点本（待复习 ${items.length}）</h3>${html}<div style="font-size:11px;color:var(--text-3);margin-top:8px">汇总所有科目学习记录里的难点与心得，考前集中攻克。</div>`);
+  },
+  openFlashcard() {
+    const cards = studyFlashcards();
+    for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+    Study._fc = { cards, i: 0, flipped: false };
+    Study._renderFlashcard();
+  },
+  _renderFlashcard() {
+    const fc = Study._fc;
+    if (!fc || !fc.cards.length) { openModal('<h3>🃏 随机抽背</h3><div class="empty"><div class="emoji">🃏</div><div>暂无可抽背内容</div></div>'); return; }
+    const c = fc.cards[fc.i];
+    openModal(`
+      <div style="text-align:center">
+        <h3 style="text-align:left">🃏 随机抽背 · ${esc(c.subject)}</h3>
+        <div class="flashcard ${fc.flipped ? 'flipped' : ''}" onclick="Study.flipFlashcard()">
+          <div class="fc-inner">
+            <div class="fc-face fc-front">${esc(c.front)}</div>
+            <div class="fc-face fc-back" style="white-space:pre-wrap">${esc(c.back)}</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-2);margin:10px 0">${fc.i + 1} / ${fc.cards.length} · 点击卡片翻面</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn secondary" onclick="Study.nextFlashcard()">下一张 →</button>
+          <button class="btn" onclick="Study.openFlashcard()">🔀 重新洗牌</button>
+        </div>
+      </div>`);
+  },
+  flipFlashcard() { Study._fc.flipped = !Study._fc.flipped; Study._renderFlashcard(); },
+  nextFlashcard() { Study._fc.i = (Study._fc.i + 1) % Study._fc.cards.length; Study._fc.flipped = false; Study._renderFlashcard(); },
   addSubject() {
     openModal(`<h3>添加自定义科目</h3>
       <span class="label">科目名称</span>
@@ -759,13 +925,17 @@ const Study = {
       <input type="date" class="input" id="subDate">
       <span class="label">目标学习时长（小时）</span>
       <input type="number" class="input" id="subHours" placeholder="如 50">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin:8px 0">
+        <input type="checkbox" id="subActive"> 标记为本期报考（重点复习）
+      </label>
       <button class="btn" onclick="Study.saveSubject()">保存</button>`);
   },
   saveSubject() {
     const name = $('#subName').value.trim();
     if (!name) return toast('请输入科目名称');
+    const active = $('#subActive').checked;
     const subs = Study.ensureSubjects();
-    subs.push({ id: uid(), name, order: subs.length, examDate: $('#subDate').value, targetHours: +$('#subHours').value || 0, progress: 0, logs: [], createdAt: Date.now() });
+    subs.push({ id: uid(), name, order: subs.length, isActive: active, examDate: $('#subDate').value || (active ? '2026-10-24' : ''), targetHours: +$('#subHours').value || 0, progress: 0, logs: [], createdAt: Date.now() });
     DB.set('subjects', subs);
     closeModal(); Nav.refresh(); toast('已添加科目');
   },
@@ -799,6 +969,7 @@ const Study = {
       </div>
       <button class="btn" onclick="Study.addLog('${id}')">+ 记录本次学习</button>
       <div style="margin-top:16px"><div class="card-title"><span>学习记录</span></div>${logHtml}</div>
+      ${(() => { const qa = STUDY_QUICK[s.name] || []; return qa.length ? `<div style="margin-top:16px"><div class="card-title"><span>本章速记（${qa.length}）</span></div>${qa.slice(0, 5).map(k => '<div style="font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line)">• ' + esc(k) + '</div>').join('')}${qa.length > 5 ? '<div style="font-size:11px;color:var(--text-3);margin-top:6px">…还有 ' + (qa.length - 5) + ' 条，每天在备考首页速记推送</div>' : ''}</div>` : ''; })()}
       <button class="btn secondary" onclick="Study.delSubject('${id}');closeModal()" style="margin-top:16px">删除该科目</button>
     `);
   },

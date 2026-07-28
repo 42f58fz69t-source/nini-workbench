@@ -822,6 +822,16 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
   .pet-cat { bottom: 120px; left: 10px; width: 52px; height: 52px; }
   .cat-bubble { bottom: 178px; left: 10px; }
 }
+/* 自考备考模块 */
+.opt { padding: 8px 12px; background: #f6f8f7; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; margin-bottom: 6px; line-height: 1.5; }
+.daily-card { border-left: 4px solid var(--primary); }
+.badge.fire { background: #fff1e6; color: #e8590c; border: 1px solid #ffd8a8; }
+.flashcard { perspective: 1000px; cursor: pointer; margin: 8px 0; }
+.fc-inner { position: relative; transition: transform .5s; transform-style: preserve-3d; min-height: 160px; }
+.flashcard.flipped .fc-inner { transform: rotateY(180deg); }
+.fc-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; align-items: center; justify-content: center; text-align: center; padding: 18px; border-radius: 14px; font-size: 15px; line-height: 1.6; }
+.fc-front { background: linear-gradient(135deg, #e6f4ea, #f6f8f7); border: 1px solid var(--line); color: var(--text-1); font-weight: 600; }
+.fc-back { background: linear-gradient(135deg, #fff4e6, #f6f8f7); border: 1px solid #ffd8a8; color: var(--text-1); transform: rotateY(180deg); font-weight: 400; }
 </style>
 </head>
 <body>
