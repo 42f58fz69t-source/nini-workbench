@@ -291,7 +291,6 @@ const Home = {
         <div class="summary">${esc(summary)}</div>
         <div class="dora-line">🍃 ${doraLine}</div>
       </div>
-      ${cycleCard}
       ${examCard}
       <div class="grid">${grid}</div>
     `;
