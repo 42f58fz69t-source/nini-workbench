@@ -2330,22 +2330,56 @@ window.addEventListener('appinstalled', () => { DB.set('installed', true); });
 /* ============================================
    Boot — 注册自定义模块渲染器并初始化
    ============================================ */
+/* ============================================
+   陪伴宠物：鲨鱼服小猫咪（可交互版）
+   ============================================ */
 const PetCat = {
   _t: null, _drag: null, _lastTap: 0,
+  _tapCount: 0, _tapTimer: null,        // 抚摸检测
+  _wanderTimer: null,                   // 漫游定时器
+  _isSleeping: false,
+
+  // —— 随机萌语池（点击时随机选一条）——
+  _phrases: [
+    '喵~ 🐱', '你好呀！', '摸摸我~ 💕', '今天也要加油哦！',
+    '我在呢~', '鲨鱼喵！🦈', '呼噜噜~ 😸', '陪我玩嘛~',
+    '你最好啦！', '喵呜~', '好开心！✨', '继续努力！💪',
+    '休息一下？', '我在看着你哦~ 👀', '抱抱！🤗', '喵喵喵~',
+    '今天辛苦了！', '你最棒了！🌟', '要喝水哦~ 💧', '爱你哟~ ❤️',
+  ],
+
+  // —— 时间感知问候 ——
+  _timeGreeting() {
+    const h = new Date().getHours();
+    if (h >= 23 || h < 5) return ['夜深了，早点睡哦~ 🌙', '晚安...zzZ 💤'][Math.random() > 0.5 ? 1 : 0];
+    if (h < 8) return ['早上好呀~ ☀️', '早安！新的一天开始啦！'][Math.random() > 0.5 ? 1 : 0];
+    if (h < 12) return ['上午好！加油！', '上午工作顺利吗~ 😊'][Math.random() > 0.5 ? 1 : 0];
+    if (h < 14) return ['中午啦，吃饭了吗？🍚', '午安~ 休息一下吧'][Math.random() > 0.5 ? 1 : 0];
+    if (h < 18) return ['下午好！继续冲！', '下午茶时间~ ☕'][Math.random() > 0.5 ? 1 : 0];
+    return ['晚上好~ 辛苦了！', '傍晚了，放松一下~ 🌅'][Math.random() > 0.5 ? 1 : 0];
+  },
+
   init() {
     const cat = document.getElementById('petCat');
     if (!cat || cat._nn_bound) return;
     cat._nn_bound = true;
+
     // 恢复保存的位置
     const saved = DB.get('catPos', null);
     if (saved && typeof saved.x === 'number') PetCat._applyPos(cat, saved.x, saved.y);
+
+    // 夜间睡眠模式
+    PetCat._updateSleepState();
+    setInterval(() => PetCat._updateSleepState(), 60000);
+
+    // 启动自动漫游
+    PetCat._startWandering();
+
+    // —— 拖拽逻辑 ——
     const start = (e) => {
       const p = e.touches ? e.touches[0] : e;
       const rect = cat.getBoundingClientRect();
-      PetCat._drag = {
-        ox: p.clientX - rect.left, oy: p.clientY - rect.top,
-        moved: false,
-      };
+      PetCat._drag = { ox: p.clientX - rect.left, oy: p.clientY - rect.top, moved: false };
       cat.classList.add('dragging');
       e.preventDefault();
     };
@@ -2356,13 +2390,8 @@ const PetCat = {
       const y = p.clientY - PetCat._drag.oy;
       PetCat._applyPos(cat, x, y);
       PetCat._drag.moved = true;
-      // 气泡跟随
       const bubble = document.getElementById('catBubble');
-      if (bubble) {
-        bubble.style.left = (x + 6) + 'px';
-        bubble.style.bottom = 'auto';
-        bubble.style.top = (y - 14) + 'px';
-      }
+      if (bubble) { bubble.style.left = (x + 10) + 'px'; bubble.style.bottom = 'auto'; bubble.style.top = (y - 16) + 'px'; }
       e.preventDefault();
     };
     const end = (e) => {
@@ -2372,15 +2401,11 @@ const PetCat = {
       const rect = cat.getBoundingClientRect();
       DB.set('catPos', { x: Math.round(rect.left), y: Math.round(rect.top) });
       PetCat._drag = null;
-      // 双击复位
-      const now = Date.now();
-      if (!moved && now - PetCat._lastTap < 350) {
-        PetCat.resetPos();
-        PetCat._lastTap = 0;
-      } else {
-        PetCat._lastTap = now;
-      }
+      // 未移动 → 点击/抚摸检测
+      if (!moved) PetCat._handleTap();
+      else { PetCat._tapCount = 0; clearTimeout(PetCat._tapTimer); }
     };
+
     cat.addEventListener('pointerdown', start);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', end);
@@ -2389,9 +2414,131 @@ const PetCat = {
     window.addEventListener('touchmove', move, { passive: false });
     window.addEventListener('touchend', end);
   },
+
+  // —— 点击/抚摸处理 ——
+  _handleTap() {
+    const now = Date.now();
+    // 双击复位
+    if (now - PetCat._lastTap < 350) {
+      PetCat.resetPos(); PetCat._lastTap = 0; PetCat._tapCount = 0;
+      clearTimeout(PetCat._tapTimer); return;
+    }
+    PetCat._lastTap = now;
+    PetCat._tapCount++;
+
+    // 连续快速点击 → 抚摸模式
+    clearTimeout(PetCat._tapTimer);
+    PetCat._tapTimer = setTimeout(() => {
+      const count = PetCat._tapCount; PetCat._tapCount = 0;
+      if (count >= 3) {
+        // 抚摸：连点3次以上触发
+        PetCat._showPetted(count);
+      } else {
+        // 单击/双击未达复位阈值 → 随机萌语
+        PetCat._showTapReaction();
+      }
+    }, 280);
+  },
+
+  _showTapReaction() {
+    const cat = document.getElementById('petCat');
+    if (!cat) return;
+    cat.classList.remove('tapped','petted'); void cat.offsetWidth;
+    cat.classList.add('tapped');
+    setTimeout(() => cat.classList.remove('tapped'), 500);
+    // 随机选一句（30%概率用时间问候）
+    let msg = Math.random() < 0.3 ? PetCat._timeGreeting() : PetCat._phrases[Math.floor(Math.random() * PetCat._phrases.length)];
+    PetCat.cheer(msg);
+    // 小粒子特效
+    PetCat._spawnParticles(3, ['✨','💫','⭐']);
+  },
+
+  _showPetted(tapCount) {
+    const cat = document.getElementById('petCat');
+    if (!cat) return;
+    cat.classList.remove('tapped','petted'); void cat.offsetWidth;
+    cat.classList.add('petted');
+    setTimeout(() => cat.classList.remove('petted'), 600);
+    // 根据抚摸次数给不同反应
+    const msgs = [
+      '嘿嘿~ 好舒服！😽',
+      '再摸摸~ 💕',
+      '哈哈哈 痒痒！😹',
+      '停不下来啦~ ❤️',
+      '你是最好的铲屎官！🏆',
+    ];
+    const idx = Math.min(Math.floor(tapCount / 3), msgs.length - 1);
+    PetCat.cheer(msgs[idx]);
+    // 大量爱心粒子
+    PetCat._spawnParticles(6 + tapCount, ['❤️','💕','💖','💗','💝','🧡']);
+  },
+
+  // —— 粒子特效系统 ——
+  _spawnParticles(count, emojis) {
+    const container = document.getElementById('petParticles');
+    const cat = document.getElementById('petCat');
+    if (!container || !cat) return;
+    const r = cat.getBoundingClientRect();
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('span');
+      el.className = 'pet-particle';
+      el.textContent = emojis[i % emojis.length];
+      // 从猫咪位置附近散开
+      const offsetX = (Math.random() - 0.5) * 50;
+      el.style.left = (r.left + r.width / 2 + offsetX) + 'px';
+      el.style.top = (r.top + r.height / 3) + 'px';
+      // 随机飘动方向
+      const angle = (Math.random() - 0.5) * 80;
+      const dist = 30 + Math.random() * 40;
+      el.style.setProperty('--dx', (Math.sin(angle * Math.PI / 180) * dist) + 'px');
+      el.style.setProperty('--dy', (-dist - Math.random() * 30) + 'px');
+      el.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 1500);
+    }
+  },
+
+  // —— 自动漫游 ——
+  _startWandering() {
+    const wander = () => {
+      if (PetCat._drag) { PetCat._scheduleWander(); return; }
+      const cat = document.getElementById('petCat');
+      if (!cat) return;
+      // 50% 概率漫游，否则下次再试
+      if (Math.random() > 0.45) { PetCat._scheduleWander(); return; }
+      const w = cat.offsetWidth || 72, h = cat.offsetHeight || 96;
+      const maxX = window.innerWidth - w - 20, maxY = window.innerHeight - h - 20;
+      if (maxX <= 0 || maxY <= 0) { PetCat._scheduleWander(); return; }
+      const nx = 10 + Math.random() * maxX;
+      const ny = 10 + Math.random() * maxY;
+      cat.classList.add('wandering');
+      cat.style.left = nx + 'px'; cat.style.top = ny + 'px'; cat.style.bottom = 'auto';
+      DB.set('catPos', { x: Math.round(nx), y: Math.round(ny) });
+      setTimeout(() => { cat.classList.remove('wandering'); }, 1300);
+      PetCat._scheduleWander();
+    };
+    // 首次延迟 15s 开始，之后每 15-35s 随机间隔
+    PetCat._wanderTimer = setTimeout(wander, 15000);
+  },
+  _scheduleWander() {
+    const delay = 15000 + Math.random() * 20000; // 15-35秒
+    PetCat._wanderTimer = setTimeout(() => PetCat._startWandering(), delay);
+  },
+
+  // —— 睡眠状态（夜间变安静）——
+  _updateSleepState() {
+    const h = new Date().getHours();
+    const shouldBeSleeping = (h >= 23 || h < 6);
+    if (shouldBeSleeping !== PetCat._isSleeping) {
+      PetCat._isSleeping = shouldBeSleeping;
+      const cat = document.getElementById('petCat');
+      if (cat) cat.classList.toggle('sleeping', shouldBeSleeping);
+    }
+  },
+
+  // —— 位置管理（保留原有）——
   _applyPos(cat, x, y) {
-    // 用 left/top 固定到任意位置（保留默认动画的 translateY/rotate 由 keyframe 控制）
-    const w = cat.offsetWidth || 60, h = cat.offsetHeight || 60;
+    const w = cat.offsetWidth || 72, h = cat.offsetHeight || 96;
     const maxX = window.innerWidth - w, maxY = window.innerHeight - h;
     x = Math.max(0, Math.min(x, maxX)); y = Math.max(0, Math.min(y, maxY));
     cat.style.left = x + 'px'; cat.style.bottom = 'auto'; cat.style.top = y + 'px';
@@ -2399,29 +2546,34 @@ const PetCat = {
   resetPos() {
     const cat = document.getElementById('petCat');
     const bubble = document.getElementById('catBubble');
-    if (cat) {
-      cat.style.left = ''; cat.style.top = ''; cat.style.bottom = '';
-    }
+    if (cat) { cat.style.left = ''; cat.style.top = ''; cat.style.bottom = ''; }
     if (bubble) { bubble.style.left = ''; bubble.style.top = ''; bubble.style.bottom = ''; }
     DB.set('catPos', null);
     PetCat.cheer('回到原位啦~ 🐾');
+    // 复位时也来点粒子
+    PetCat._spawnParticles(5, ['✨','🌟','💫','⭐','🦈']);
   },
+
+  // —— 欢呼（各模块完成任务时调用）——
   cheer(msg) {
     const cat = document.getElementById('petCat');
     const bubble = document.getElementById('catBubble');
     if (!cat || !bubble) return;
     bubble.textContent = msg || '加油！💪';
-    // 气泡定位到猫咪当前位置上方
     if (!PetCat._drag) {
       const r = cat.getBoundingClientRect();
-      bubble.style.left = (r.left + 6) + 'px';
+      bubble.style.left = (r.left + 10) + 'px';
       bubble.style.bottom = 'auto';
-      bubble.style.top = (r.top - 14) + 'px';
+      bubble.style.top = (r.top - 16) + 'px';
     }
     bubble.classList.add('show');
-    cat.classList.remove('cheer'); void cat.offsetWidth; cat.classList.add('cheer');
+    // 使用新的 cheering 动画类
+    cat.classList.remove('cheering','tapped','petted'); void cat.offsetWidth;
+    cat.classList.add('cheering');
     clearTimeout(PetCat._t);
-    PetCat._t = setTimeout(() => bubble.classList.remove('show'), 2600);
+    PetCat._t = setTimeout(() => { bubble.classList.remove('show'); cat.classList.remove('cheering'); }, 2800);
+    // 庆祝粒子
+    PetCat._spawnParticles(7, ['🎉','✨','⭐','💫','🌟','❤️','🎊']);
   }
 };
 
