@@ -692,6 +692,73 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 .essay-box .content p { margin-bottom: 6px; }
 .refresh-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--primary-dark); font-weight: 600; padding: 6px 12px; border-radius: 8px; background: var(--primary-soft); }
 
+/* ===== 动态装饰：哆啦A梦 & 蜡笔小新（新造型，避开侧边栏与猫咪）===== */
+/* 哆啦A梦 - 右侧中上浮动 */
+.doraemon {
+  position: fixed;
+  top: 90px;
+  right: 18px;
+  z-index: 45;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  animation: doraemonFloat 3.4s ease-in-out infinite;
+}
+@keyframes doraemonFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(4deg); }
+}
+/* 蜡笔小新 - 底部内容区左侧浮动（紧挨侧边栏右边，不压菜单） */
+.shinchan {
+  position: fixed;
+  bottom: 26px;
+  left: 76px;
+  z-index: 45;
+  width: 50px;
+  height: 50px;
+  pointer-events: none;
+  animation: shinchanBounce 2.8s ease-in-out infinite;
+}
+@keyframes shinchanBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(-5deg); }
+}
+/* 小星星点缀（仅内容区安全位置） */
+.sparkle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 44;
+  font-size: 15px;
+  opacity: 0;
+  animation: sparkleFloat 2.4s ease-in-out infinite;
+}
+.sparkle.s1 { top: 22%; right: 22px; }
+.sparkle.s2 { top: 36%; right: 72px; animation-delay: 0.6s; }
+.sparkle.s3 { bottom: 210px; left: 80px; animation-delay: 1.2s; }
+.sparkle.s4 { top: 56%; left: 90px; animation-delay: 0.3s; }
+@keyframes sparkleFloat {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 0.8; transform: translateY(-18px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-36px) scale(0.3); }
+}
+/* 移动端：贴右中上 + 底部内容区左侧，避开 64px 侧边栏与右下角猫咪 */
+@media (max-width: 767px) {
+  .doraemon { top: 38%; right: 8px; width: 46px; height: 46px; }
+  .shinchan { bottom: 22px; left: 74px; width: 44px; height: 44px; }
+  .sparkle.s1 { top: 20%; right: 16px; }
+  .sparkle.s2 { top: 34%; right: 60px; }
+  .sparkle.s3 { bottom: 180px; left: 76px; }
+  .sparkle.s4 { top: 54%; left: 82px; }
+}
+/* 桌面端：侧边栏宽 250px，装饰须避开 */
+@media (min-width: 768px) {
+  .doraemon { top: 84px; right: 20px; width: 64px; height: 64px; }
+  .shinchan { bottom: 28px; left: 270px; width: 54px; height: 54px; }
+  .sparkle.s1 { top: 18%; right: 26px; }
+  .sparkle.s2 { top: 32%; right: 92px; }
+  .sparkle.s3 { bottom: 220px; left: 282px; }
+  .sparkle.s4 { top: 54%; left: 300px; }
+}
 
 /* ===== 陪伴宠物：鲨鱼服小猫咪 ===== */
 .pet-wrap {
@@ -826,6 +893,55 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 </div>
 <script src="builtin-data.js"></script>
 <script src="app.js"></script>
+
+<!-- 动态装饰：哆啦A梦（新造型） -->
+<svg class="doraemon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="28" cy="22" r="13" fill="#4a9ed6" stroke="#2c6e9e" stroke-width="2"/>
+  <circle cx="92" cy="22" r="13" fill="#4a9ed6" stroke="#2c6e9e" stroke-width="2"/>
+  <circle cx="28" cy="22" r="6" fill="#fff"/>
+  <circle cx="92" cy="22" r="6" fill="#fff"/>
+  <circle cx="60" cy="60" r="46" fill="#4a9ed6" stroke="#2c6e9e" stroke-width="2"/>
+  <ellipse cx="60" cy="66" rx="37" ry="38" fill="#fff"/>
+  <circle cx="46" cy="50" r="12" fill="#fff" stroke="#2c6e9e" stroke-width="1.5"/>
+  <circle cx="74" cy="50" r="12" fill="#fff" stroke="#2c6e9e" stroke-width="1.5"/>
+  <circle cx="48" cy="52" r="5.5" fill="#222"/>
+  <circle cx="72" cy="52" r="5.5" fill="#222"/>
+  <circle cx="50" cy="50" r="2" fill="#fff"/>
+  <circle cx="74" cy="50" r="2" fill="#fff"/>
+  <circle cx="60" cy="62" r="6" fill="#e74c3c"/>
+  <path d="M60 68 V74" stroke="#2c6e9e" stroke-width="1.5" fill="none"/>
+  <path d="M44 77 Q60 89 76 77" fill="none" stroke="#2c6e9e" stroke-width="2" stroke-linecap="round"/>
+  <line x1="20" y1="62" x2="38" y2="66" stroke="#2c6e9e" stroke-width="1.3"/>
+  <line x1="20" y1="72" x2="38" y2="70" stroke="#2c6e9e" stroke-width="1.3"/>
+  <line x1="100" y1="62" x2="82" y2="66" stroke="#2c6e9e" stroke-width="1.3"/>
+  <line x1="100" y1="72" x2="82" y2="70" stroke="#2c6e9e" stroke-width="1.3"/>
+  <circle cx="60" cy="104" r="9" fill="#f1c40f" stroke="#d4ac0d" stroke-width="1"/>
+  <line x1="51" y1="104" x2="69" y2="104" stroke="#d4ac0d" stroke-width="1.5"/>
+  <circle cx="60" cy="101" r="2" fill="#d4ac0d"/>
+</svg>
+
+<!-- 动态装饰：蜡笔小新（新造型） -->
+<svg class="shinchan" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="50" cy="54" rx="32" ry="33" fill="#fde0bd" stroke="#e8c39e" stroke-width="1.5"/>
+  <path d="M28 30 L33 13 L42 27 Z" fill="#333"/>
+  <path d="M45 25 L50 9 L56 25 Z" fill="#333"/>
+  <path d="M59 27 L68 13 L72 31 Z" fill="#333"/>
+  <circle cx="38" cy="50" r="3.6" fill="#222"/>
+  <circle cx="62" cy="50" r="3.6" fill="#222"/>
+  <path d="M31 43 Q38 40 45 43" stroke="#333" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <path d="M55 43 Q62 40 69 43" stroke="#333" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <path d="M40 63 Q50 71 60 63" fill="none" stroke="#a0522d" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="29" cy="60" r="4" fill="#ffb3b3" opacity="0.5"/>
+  <circle cx="71" cy="60" r="4" fill="#ffb3b3" opacity="0.5"/>
+  <path d="M26 85 Q50 96 74 85 L74 99 L26 99 Z" fill="#e74c3c"/>
+  <rect x="38" y="83" width="24" height="6" rx="3" fill="#f1c40f"/>
+</svg>
+
+<!-- 小星星点缀 -->
+<div class="sparkle s1">✨</div>
+<div class="sparkle s2">💫</div>
+<div class="sparkle s3">⭐</div>
+<div class="sparkle s4">🌟</div>
 
 <!-- 陪伴宠物：鲨鱼服小猫咪 -->
 <div class="pet-wrap" id="petCat">
