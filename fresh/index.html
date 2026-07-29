@@ -692,99 +692,6 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 .essay-box .content p { margin-bottom: 6px; }
 .refresh-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--primary-dark); font-weight: 600; padding: 6px 12px; border-radius: 8px; background: var(--primary-soft); }
 
-/* ===== 哆啦A梦 & 蜡笔小新 动态装饰 ===== */
-/* 哆啦A梦 - 右下角浮动 */
-.doraemon {
-  position: fixed;
-  bottom: 100px;
-  right: 16px;
-  z-index: 50;
-  width: 60px;
-  height: 60px;
-  pointer-events: none;
-  animation: doraemonFloat 3s ease-in-out infinite;
-}
-@keyframes doraemonFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-10px) rotate(3deg); }
-  75% { transform: translateY(-4px) rotate(-2deg); }
-}
-/* 蜡笔小新 - 左下角浮动 */
-.shinchan {
-  position: fixed;
-  bottom: 100px;
-  left: 16px;
-  z-index: 50;
-  width: 55px;
-  height: 55px;
-  pointer-events: none;
-  animation: shinchanBounce 2.5s ease-in-out infinite;
-}
-@keyframes shinchanBounce {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  30% { transform: translateY(-14px) rotate(-5deg); }
-  60% { transform: translateY(-6px) rotate(3deg); }
-}
-/* 哆啦A梦的铃铛 */
-.doraemon-bell {
-  position: fixed;
-  bottom: 155px;
-  right: 38px;
-  z-index: 51;
-  width: 12px;
-  height: 12px;
-  background: var(--yellow);
-  border-radius: 50%;
-  pointer-events: none;
-  animation: bellRing 2s ease-in-out infinite;
-  box-shadow: 0 0 6px rgba(255,241,118,0.6);
-}
-@keyframes bellRing {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.3); opacity: 1; }
-}
-/* 小新的动感超人披风 */
-.shinchan-cape {
-  position: fixed;
-  bottom: 148px;
-  left: 38px;
-  z-index: 51;
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 2px;
-  pointer-events: none;
-  animation: capeWave 1.5s ease-in-out infinite;
-}
-@keyframes capeWave {
-  0%, 100% { transform: rotate(-10deg); }
-  50% { transform: rotate(10deg); }
-}
-/* 移动端适配 */
-@media (max-width: 767px) {
-  .doraemon { bottom: 130px; right: 10px; width: 48px; height: 48px; }
-  .shinchan { bottom: 130px; left: 10px; width: 44px; height: 44px; }
-  .doraemon-bell { bottom: 173px; right: 30px; }
-  .shinchan-cape { bottom: 168px; left: 30px; }
-}
-/* 小星星点缀 */
-.sparkle {
-  position: fixed;
-  pointer-events: none;
-  z-index: 49;
-  font-size: 14px;
-  opacity: 0;
-  animation: sparkleFloat 2s ease-in-out infinite;
-}
-.sparkle:nth-child(1) { bottom: 170px; right: 80px; animation-delay: 0s; }
-.sparkle:nth-child(2) { bottom: 140px; right: 50px; animation-delay: 0.6s; }
-.sparkle:nth-child(3) { bottom: 170px; left: 70px; animation-delay: 1.2s; }
-.sparkle:nth-child(4) { bottom: 140px; left: 60px; animation-delay: 0.3s; }
-@keyframes sparkleFloat {
-  0% { opacity: 0; transform: translateY(0) scale(0.5); }
-  50% { opacity: 0.7; transform: translateY(-20px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-40px) scale(0.3); }
-}
 
 /* ===== 陪伴宠物：鲨鱼服小猫咪 ===== */
 .pet-wrap {
@@ -891,8 +798,8 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
   border: 10px solid transparent; border-top-color: #7ec8e3;
 }
 @media (max-width: 767px) {
-  .pet-wrap { bottom: 120px; left: 10px; }
-  .cat-bubble { bottom: 178px; left: 10px; max-width: 170px; font-size: 12px; }
+  .pet-wrap { bottom: 120px; right: 12px; left: auto; }
+  .cat-bubble { bottom: 178px; right: 12px; left: auto; max-width: 170px; font-size: 12px; }
 }
 /* 自考备考模块 */
 .opt { padding: 8px 12px; background: #f6f8f7; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; margin-bottom: 6px; line-height: 1.5; }
@@ -4060,7 +3967,7 @@ const PetCat = {
 
 // ===== 强制刷新守卫（写在 app.js 里，因为 app.js 走网络优先一定能拿到最新版）=====
 // 解决 iOS PWA 的终极缓存死锁：index.html 被 SW 缓存后永远不更新
-const _FORCE_VER = 'v19-nocache-fix'; // 每次需要强制刷新时改此值
+const _FORCE_VER = 'v20-catfix'; // 每次需要强制刷新时改此值
 (function() {
   try {
     const last = localStorage.getItem('nn_force_ver') || '';
@@ -4092,54 +3999,6 @@ const _FORCE_VER = 'v19-nocache-fix'; // 每次需要强制刷新时改此值
 
 </script>
 
-<!-- 哆啦A梦 SVG -->
-<svg class="doraemon" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <ellipse cx="60" cy="70" rx="42" ry="44" fill="#4a9ed6"/>
-  <ellipse cx="60" cy="55" rx="38" ry="36" fill="white"/>
-  <ellipse cx="44" cy="48" rx="10" ry="12" fill="white" stroke="#333" stroke-width="1.5"/>
-  <ellipse cx="76" cy="48" rx="10" ry="12" fill="white" stroke="#333" stroke-width="1.5"/>
-  <circle cx="47" cy="46" r="5" fill="#333"/>
-  <circle cx="73" cy="46" r="5" fill="#333"/>
-  <circle cx="48" cy="44" r="1.5" fill="white"/>
-  <circle cx="74" cy="44" r="1.5" fill="white"/>
-  <circle cx="60" cy="56" r="6" fill="#e74c3c"/>
-  <circle cx="58" cy="54" r="1.5" fill="white"/>
-  <path d="M40 64 Q60 78 80 64" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round"/>
-  <line x1="20" y1="52" x2="38" y2="58" stroke="#333" stroke-width="1.2"/>
-  <line x1="18" y1="60" x2="37" y2="62" stroke="#333" stroke-width="1.2"/>
-  <line x1="22" y1="68" x2="38" y2="66" stroke="#333" stroke-width="1.2"/>
-  <line x1="100" y1="52" x2="82" y2="58" stroke="#333" stroke-width="1.2"/>
-  <line x1="102" y1="60" x2="83" y2="62" stroke="#333" stroke-width="1.2"/>
-  <line x1="98" y1="68" x2="82" y2="66" stroke="#333" stroke-width="1.2"/>
-  <circle cx="60" cy="78" r="7" fill="#f1c40f"/>
-  <line x1="60" y1="84" x2="60" y2="87" stroke="#333" stroke-width="1"/>
-  <circle cx="60" cy="87" r="1.5" fill="#333"/>
-  <path d="M32 72 Q60 90 88 72" fill="white" stroke="#ddd" stroke-width="1"/>
-</svg>
-<div class="doraemon-bell"></div>
-
-<!-- 蜡笔小新 SVG -->
-<svg class="shinchan" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <ellipse cx="50" cy="52" rx="34" ry="38" fill="#f5d5a0"/>
-  <path d="M18 32 Q30 14 50 16 Q70 14 82 32" fill="#333"/>
-  <rect x="28" y="34" width="14" height="5" rx="2.5" fill="#333"/>
-  <rect x="58" y="34" width="14" height="5" rx="2.5" fill="#333"/>
-  <circle cx="36" cy="44" r="6" fill="#333"/>
-  <circle cx="64" cy="44" r="6" fill="#333"/>
-  <circle cx="34" cy="42" r="1.8" fill="white"/>
-  <circle cx="62" cy="42" r="1.8" fill="white"/>
-  <path d="M38 58 Q50 66 62 58" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="28" cy="54" r="4" fill="#ff9999" opacity="0.4"/>
-  <circle cx="72" cy="54" r="4" fill="#ff9999" opacity="0.4"/>
-  <rect x="34" y="68" width="32" height="24" rx="4" fill="#e74c3c"/>
-  <rect x="34" y="68" width="32" height="4" rx="2" fill="#f1c40f"/>
-</svg>
-<div class="shinchan-cape"></div>
-
-<div class="sparkle">✨</div>
-<div class="sparkle">💫</div>
-<div class="sparkle">⭐</div>
-<div class="sparkle">🌟</div>
 
 <!-- 陪伴宠物：鲨鱼服小猫咪 -->
 <div class="pet-wrap" id="petCat">
