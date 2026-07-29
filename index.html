@@ -788,7 +788,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 
 /* ===== 陪伴宠物：鲨鱼服小猫咪 ===== */
 .pet-wrap {
-  position: fixed; z-index: 60; cursor: grab; touch-action: none;
+  position: fixed; right: 16px; bottom: 96px; z-index: 60; cursor: grab; touch-action: none;
   user-select: none; -webkit-user-select: none;
   filter: drop-shadow(0 6px 16px rgba(100,160,200,0.35));
   transition: filter 0.3s;
@@ -813,9 +813,9 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 }
 
 @media (max-width: 767px) {
-  .pet-wrap { bottom: 120px; left: 10px; }
+  .pet-wrap { bottom: 110px; right: 12px; left: auto; }
   .pet-img { width: 62px; }
-  .cat-bubble { bottom: 178px; left: 10px; max-width: 170px; font-size: 12px; }
+  .cat-bubble { bottom: 178px; right: 12px; left: auto; max-width: 170px; font-size: 12px; }
 }
 
 /* —— 组合 idle 动画（单 keyframe 避免多动画覆盖）—— */
@@ -980,7 +980,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 
 <script>
 // ===== 强制更新机制：解决 iOS Safari PWA 缓存不刷新问题 =====
-const APP_VERSION = '2026-07-29-v16'; // 每次大更新时改此值，用户打开即自动清旧缓存
+const APP_VERSION = '2026-07-29-v17'; // 每次大更新时改此值，用户打开即自动清旧缓存
 (function() {
   try {
     const lastVer = localStorage.getItem('nini_app_ver') || '';

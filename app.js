@@ -2401,26 +2401,21 @@ const PetCat = {
     // 启动自动漫游
     PetCat._startWandering();
 
-    // —— 拖拽逻辑 ——
-    const start = (e) => {
-      const p = e.touches ? e.touches[0] : e;
-      const rect = cat.getBoundingClientRect();
-      PetCat._drag = { ox: p.clientX - rect.left, oy: p.clientY - rect.top, moved: false };
+    // —— 拖拽 + 点击 事件（纯 touch + mouse，避开 iOS PWA 的 pointer 事件坑）——
+    const onStart = (cx, cy) => {
+      const r = cat.getBoundingClientRect();
+      PetCat._drag = { ox: cx, oy: cy, moved: false, bx: r.left, by: r.top };
       cat.classList.add('dragging');
-      e.preventDefault();
     };
-    const move = (e) => {
+    const onMove = (cx, cy) => {
       if (!PetCat._drag) return;
-      const p = e.touches ? e.touches[0] : e;
-      const x = p.clientX - PetCat._drag.ox;
-      const y = p.clientY - PetCat._drag.oy;
-      PetCat._applyPos(cat, x, y);
-      PetCat._drag.moved = true;
+      const dx = cx - PetCat._drag.ox, dy = cy - PetCat._drag.oy;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) PetCat._drag.moved = true;
+      PetCat._applyPos(cat, PetCat._drag.bx + dx, PetCat._drag.by + dy);
       const bubble = document.getElementById('catBubble');
-      if (bubble) { bubble.style.left = (x + 10) + 'px'; bubble.style.bottom = 'auto'; bubble.style.top = (y - 16) + 'px'; }
-      e.preventDefault();
+      if (bubble) { bubble.style.left = (PetCat._drag.bx + dx + 10) + 'px'; bubble.style.bottom = 'auto'; bubble.style.top = (PetCat._drag.by + dy - 16) + 'px'; }
     };
-    const end = (e) => {
+    const onEnd = () => {
       if (!PetCat._drag) return;
       const moved = PetCat._drag.moved;
       cat.classList.remove('dragging');
@@ -2432,13 +2427,19 @@ const PetCat = {
       else { PetCat._tapCount = 0; clearTimeout(PetCat._tapTimer); }
     };
 
-    cat.addEventListener('pointerdown', start);
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
-    cat.addEventListener('touchstart', start, { passive: false });
-    window.addEventListener('touchmove', move, { passive: false });
-    window.addEventListener('touchend', end);
+    // 触摸事件（移动端 / iOS，passive 避免拦截默认行为）
+    cat.addEventListener('touchstart', (e) => { const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (!PetCat._drag) return;
+      const t = e.touches[0]; onMove(t.clientX, t.clientY);
+      if (PetCat._drag.moved) e.preventDefault(); // 仅在真正拖动时阻止页面滚动
+    }, { passive: false });
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('touchcancel', onEnd);
+    // 鼠标事件（桌面端）
+    cat.addEventListener('mousedown', (e) => { onStart(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', (e) => { onMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', onEnd);
   },
 
   // —— 点击/抚摸处理 ——
@@ -2611,7 +2612,7 @@ const PetCat = {
   DB.get('customModules', []).forEach(m => {
     PAGES[m.id] = () => CustomModule.render(m.id);
   });
-  PetCat.init();
+  try { PetCat.init(); } catch (err) { console.error('PetCat init failed:', err); }
   Study.initTimer(); // 启动时恢复正在计时的科目（不重启计时，仅恢复状态）
   Nav.go('home');
 })();
