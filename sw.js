@@ -1,4 +1,4 @@
-const CACHE = 'nini-v17';
+const CACHE = 'nini-v18';
 const FILES = [
   './', './index.html', './app.js', './builtin-data.js',
   './manifest.json', './icon-v2-192.png', './icon-v2-512.png'

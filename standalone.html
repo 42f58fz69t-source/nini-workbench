@@ -4058,6 +4058,25 @@ const PetCat = {
   }
 };
 
+// ===== 强制刷新守卫（写在 app.js 里，因为 app.js 走网络优先一定能拿到最新版）=====
+// 解决 iOS PWA 的终极缓存死锁：index.html 被 SW 缓存后永远不更新
+const _FORCE_VER = 'v17-pet-fix'; // 每次需要强制刷新时改此值
+(function() {
+  try {
+    const last = localStorage.getItem('nn_force_ver') || '';
+    if (last !== _FORCE_VER) {
+      // 版本不匹配 → 清除一切缓存并强制重载
+      localStorage.setItem('nn_force_ver', _FORCE_VER);
+      if ('caches' in window) caches.keys().then(k => k.forEach(n => caches.delete(n)));
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+      }
+      // 用时间戳绕过所有缓存
+      location.href = location.pathname + (location.search ? '&' : '?') + '_t=' + Date.now() + location.hash;
+    }
+  } catch(e) { console.warn('force-ver check:', e); }
+})();
+
 (function init() {
   // 应用主题
   const theme = DB.get('theme', '');
@@ -4133,7 +4152,7 @@ const PetCat = {
 
 <script>
 // ===== 强制更新机制：解决 iOS Safari PWA 缓存不刷新问题 =====
-const APP_VERSION = '2026-07-29-v16'; // 每次大更新时改此值，用户打开即自动清旧缓存
+const APP_VERSION = '2026-07-29-v17'; // 每次大更新时改此值，用户打开即自动清旧缓存
 (function() {
   try {
     const lastVer = localStorage.getItem('nini_app_ver') || '';
