@@ -109,9 +109,9 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 .sidebar .sb-header .sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
 .sidebar-item {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
-  color: var(--text-2); font-size: 14px; font-weight: 500; margin-bottom: 2px; transition: all 0.15s;
+  color: var(--text-2); font-size: 14px; font-weight: 600; margin-bottom: 2px; transition: all 0.15s;
 }
-.sidebar-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar-item svg, .sidebar-item img { width: 22px; height: 22px; flex-shrink: 0; object-fit: contain; border-radius: 6px; }
 .sidebar-item:active, .sidebar-item:hover { background: var(--primary-soft); }
 .sidebar-item.active { background: var(--primary); color: white; }
 .sidebar .sb-section { font-size: 11px; color: var(--text-3); padding: 12px 12px 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -144,7 +144,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
     gap: 3px; padding: 8px 2px; font-size: 10px; font-weight: 600;
     margin-bottom: 4px; border-radius: 10px;
   }
-  .sidebar-item svg { width: 22px; height: 22px; }
+  .sidebar-item svg, .sidebar-item img { width: 26px; height: 26px; }
   .sidebar-item span { display: block; text-align: center; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .main { margin-left: 64px; }
   /* 展开态（可选：点击汉堡后展开为宽面板） */
@@ -921,7 +921,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 
 <script>
 // ===== 强制更新机制：解决 iOS Safari PWA 缓存不刷新问题 =====
-const APP_VERSION = '2026-07-29-v22-stable'; // 每次大更新时改此值，用户打开即自动清旧缓存
+const APP_VERSION = '2026-07-29-v23-doraemon-icons'; // 每次大更新时改此值，用户打开即自动清旧缓存
 (function() {
   try {
     const lastVer = localStorage.getItem('nini_app_ver') || '';
