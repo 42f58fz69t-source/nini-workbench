@@ -2606,7 +2606,7 @@ const PetCat = {
 
 // ===== 强制刷新守卫（写在 app.js 里，因为 app.js 走网络优先一定能拿到最新版）=====
 // 解决 iOS PWA 的终极缓存死锁：index.html 被 SW 缓存后永远不更新
-const _FORCE_VER = 'v17-pet-fix'; // 每次需要强制刷新时改此值
+const _FORCE_VER = 'v19-nocache-fix'; // 每次需要强制刷新时改此值
 (function() {
   try {
     const last = localStorage.getItem('nn_force_ver') || '';

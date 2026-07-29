@@ -1,9 +1,9 @@
-const CACHE = 'nini-v18';
+const CACHE = 'nini-v19';
 const FILES = [
-  './', './index.html', './app.js', './builtin-data.js',
-  './manifest.json', './icon-v2-192.png', './icon-v2-512.png'
+  './manifest.json', './icon-v2-192.png', './icon-v2-512.png', './favicon.ico'
 ];
 
+// 静态资源预缓存（仅图标/manifest 等不会改变的文件）
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(FILES).catch(() => {}))
@@ -16,7 +16,6 @@ self.addEventListener('activate', (e) => {
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim()).then(() => {
-      // 通知所有已打开的页面：有新版本，立即刷新以加载最新资源
       return self.clients.matchAll({ includeUncontrolled: true }).then(clients =>
         clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', version: CACHE }))
       );
@@ -24,14 +23,30 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// 监听页面消息：强制刷新
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// 网络优先策略：联网时拿最新数据并更新缓存，离线时用缓存
+// 缓存策略：
+// - .html / .js（代码文件）：始终网络优先 + cache:no-store，永不缓存 → 保证每次拿到最新，彻底避免死锁
+// - 其他静态资源：网络优先 + 缓存（离线可用）
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  const isCode = url.pathname.endsWith('.html') || url.pathname.endsWith('.js') ||
+                 url.pathname === '/' || url.pathname.endsWith('/');
+
+  if (isCode) {
+    // 代码文件：网络优先，禁用浏览器 HTTP 缓存，不写入 SW 缓存
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store', cacheControl: 'no-cache' }).catch(() =>
+        fetch(e.request).catch(() => caches.match('./index.html'))
+      )
+    );
+    return;
+  }
+
+  // 其他资源：网络优先 + 缓存
   e.respondWith(
     fetch(e.request).then(networkResp => {
       if (networkResp && networkResp.status === 200) {
@@ -40,9 +55,7 @@ self.addEventListener('fetch', (e) => {
       }
       return networkResp;
     }).catch(() =>
-      caches.match(e.request).then(cached =>
-        cached || caches.match('./index.html')
-      )
+      caches.match(e.request).then(cached => cached || caches.match('./index.html'))
     )
   );
 });
