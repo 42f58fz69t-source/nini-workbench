@@ -581,7 +581,10 @@ const DailyRead = {
       <div class="essay-box" style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
           <div style="font-weight:700;color:var(--primary-dark);font-size:15px">${esc(w.title)}</div>
-          <button class="task-delete" onclick="DailyRead.delWord('${w.id}')">${ICONS.trash}</button>
+          <div style="display:flex;gap:4px">
+            <button class="btn-sm" onclick="DailyRead.editWord('${w.id}')" style="font-size:11px;padding:2px 8px">✏️ 编辑</button>
+            <button class="task-delete" onclick="DailyRead.delWord('${w.id}')">${ICONS.trash}</button>
+          </div>
         </div>
         <div style="font-size:13px;line-height:1.9;white-space:pre-wrap;margin-top:6px">${esc(w.content)}</div>
         <div style="font-size:11px;color:var(--text-3);margin-top:6px">${w.date}</div>
@@ -615,6 +618,29 @@ const DailyRead = {
     if (!confirm('删除这条积累？')) return;
     DB.set('goodwords', DB.get('goodwords', []).filter(w => w.id !== id));
     Nav.refresh(); toast('已删除');
+  },
+  editWord(id) {
+    const words = DB.get('goodwords', []);
+    const w = words.find(x => x.id === id);
+    if (!w) return toast('未找到该条目');
+    openModal(`<h3>✏️ 编辑好词好句</h3>
+      <span class="label">话题标题</span><input class="input" id="gwTitle" value="${esc(w.title)}" placeholder="如：民生为本">
+      <span class="label">内容（名言 + 解读，可多行）</span><textarea class="textarea" id="gwContent" placeholder="名言原文\n解读：适用主题...">${esc(w.content)}</textarea>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn" style="flex:1" onclick="DailyRead.updateWord('${id}')">保存修改</button>
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+      </div>`);
+  },
+  updateWord(id) {
+    const title = $('#gwTitle').value.trim();
+    const content = $('#gwContent').value.trim();
+    if (!title || !content) return toast('请填写标题和内容');
+    const words = DB.get('goodwords', []);
+    const idx = words.findIndex(w => w.id === id);
+    if (idx === -1) return toast('未找到该条目');
+    words[idx] = { ...words[idx], title, content, date: todayStr() };
+    DB.set('goodwords', words);
+    closeModal(); DailyRead.setTab('words'); Nav.refresh(); toast('已更新');
   },
   setTab(t) { DailyRead._tab = t; Nav.refresh(); },
   shift(n) {
