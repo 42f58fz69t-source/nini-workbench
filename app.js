@@ -187,6 +187,8 @@ const Nav = {
       </div>`;
     }
     $('#app').innerHTML = topbar + `<div class="page active">${render()}</div>`;
+    // 计时卡片需等 DOM 插入后再渲染（避免被静态模板覆盖）
+    if (Nav.current === 'study' && Study._timerUiId) Study._renderTimerCard();
   },
   toggleSidebar() {
     document.body.classList.toggle('sb-open');
@@ -535,17 +537,18 @@ const DailyRead = {
       </div>
     `;
   },
-  _renderQuiz(date) {
-    if (typeof COMMON_SENSE === 'undefined' || !COMMON_SENSE.length) return `<div class="empty"><div class="emoji">🧠</div><div>题库加载中</div></div>`;
-    const seed = date.split('-').reduce((a, b) => a + parseInt(b), 0);
+  _quizPicks(date) {
+    if (typeof COMMON_SENSE === 'undefined' || !COMMON_SENSE.length) return [];
+    const n = COMMON_SENSE.length;
+    const dayIndex = _dayIndexFromDate(date);
+    const start = ((dayIndex * 3) % n + n) % n; // 步长3：相邻日零重叠，10题全覆盖
     const picks = [];
-    const pool = COMMON_SENSE.slice();
-    let idx = seed;
-    while (picks.length < 3 && pool.length) {
-      idx = (idx * 9301 + 49297) % 233280;
-      const i = idx % pool.length;
-      picks.push(pool.splice(i, 1)[0]);
-    }
+    for (let k = 0; k < 3 && n; k++) picks.push(COMMON_SENSE[(start + k) % n]);
+    return picks;
+  },
+  _renderQuiz(date) {
+    const picks = DailyRead._quizPicks(date);
+    if (!picks.length) return `<div class="empty"><div class="emoji">🧠</div><div>题库加载中</div></div>`;
     return `<div style="font-size:12px;color:var(--text-2);margin-bottom:10px">每日3题 · 今日(${fmtDate(date)})</div>` + picks.map((q, i) => `
       <div class="read-item" id="quiz-${i}" style="padding:14px 0">
         <div class="read-title" style="margin-bottom:8px">${i+1}. ${esc(q.q)}</div>
@@ -556,13 +559,8 @@ const DailyRead = {
       </div>`).join('');
   },
   answerQuiz(qi, oi) {
-    if (typeof COMMON_SENSE === 'undefined') return;
     const date = DailyRead._viewDate || todayStr();
-    const seed = date.split('-').reduce((a, b) => a + parseInt(b), 0);
-    const picks = [];
-    const pool = COMMON_SENSE.slice();
-    let idx = seed;
-    while (picks.length < 3 && pool.length) { idx = (idx * 9301 + 49297) % 233280; const i = idx % pool.length; picks.push(pool.splice(i, 1)[0]); }
+    const picks = DailyRead._quizPicks(date);
     const q = picks[qi];
     if (!q) return;
     const opts = $$(`#quiz-${qi} .opt`);
@@ -577,17 +575,18 @@ const DailyRead = {
     const daily = GOODWORDS_DEFAULT[dayIdx];
     const userWords = DB.get('goodwords', []);
     const userHtml = userWords.length ? userWords.slice().reverse().map(w => `
-      <div class="essay-box" style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-          <div style="font-weight:700;color:var(--primary-dark);font-size:15px">${esc(w.title)}</div>
-          <div style="display:flex;gap:4px">
-            <button class="btn-sm" onclick="DailyRead.editWord('${w.id}')" style="font-size:11px;padding:2px 8px">✏️ 编辑</button>
-            <button class="task-delete" onclick="DailyRead.delWord('${w.id}')">${ICONS.trash}</button>
-          </div>
+      <details class="myword">
+        <summary>
+          <span class="mw-title">${esc(w.title)}</span>
+          <span class="mw-date">${w.date}</span>
+          <span class="mw-chev">▾</span>
+        </summary>
+        <div class="mw-body">${esc(w.content)}</div>
+        <div class="mw-actions">
+          <button class="btn-sm" onclick="DailyRead.editWord('${w.id}')" style="font-size:11px;padding:2px 8px">✏️ 编辑</button>
+          <button class="task-delete" onclick="DailyRead.delWord('${w.id}')">${ICONS.trash}</button>
         </div>
-        <div style="font-size:13px;line-height:1.9;white-space:pre-wrap;margin-top:6px">${esc(w.content)}</div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:6px">${w.date}</div>
-      </div>`).join('') : `<div class="empty" style="padding:16px"><div class="emoji">💎</div><div>还没有积累的好词好句，下面添加一条吧</div></div>`;
+      </details>`).join('') : `<div class="empty" style="padding:16px"><div class="emoji">💎</div><div>还没有积累的好词好句，下面添加一条吧</div></div>`;
     return `
       <div class="essay-box" style="margin-bottom:12px">
         <div class="topic-label">📅 今日推送（${fmtDate(date)}）</div>
@@ -846,23 +845,27 @@ const Study = {
   _renderTimerCard() {
     const id = Study._timerUiId;
     if (!id) return;
-    const el = document.getElementById('timerCard');
+    const el = document.getElementById('timerInner');
     if (!el) return;
+    const titleEl = document.getElementById('timerCardTitle');
+    const tt = Study.ensureSubjects().find(x => x.id === id);
+    if (titleEl && tt) titleEl.textContent = '⏱ 计时 · ' + tt.name;
     const st = DB.get('studyTimer', null);
     const running = st && st.running && st.id === id;
     const sec = running ? (st.sec + Math.floor((Date.now() - st.startedAt) / 1000)) : (st ? st.sec : 0);
+    const paused = st && !st.running && st.id === id;
     el.innerHTML = `
       <div style="text-align:center">
         <div id="timerDisplay" style="font-size:48px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;letter-spacing:-1px">${Study.fmtTimer(sec)}</div>
-        <div style="font-size:12px;color:var(--text-3);margin:4px 0 12px">${running ? '计时中 · 锁屏/切屏不影响' : '已暂停（点开始继续）'}</div>
+        <div style="font-size:12px;color:var(--text-3);margin:4px 0 12px">${running ? '计时中 · 锁屏/切屏不影响' : (paused ? '已暂停 · 点继续计时接着累计' : '未开始 · 点开始计时')}</div>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
           ${running
             ? `<button class="btn secondary" onclick="Study.pauseTimer()">⏸ 暂停</button>`
-            : `<button class="btn" onclick="Study.startTimer('${id}')">▶ 开始计时</button>`}
+            : `<button class="btn" onclick="Study.startTimer('${id}')">${paused ? '▶ 继续计时' : '▶ 开始计时'}</button>`}
           <button class="btn" onclick="Study.stopTimer('${id}')">⏹ 停止并记录</button>
           <button class="btn secondary" onclick="Study.closeTimer()">✕ 收起</button>
         </div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:8px">停止后自动写入「记录本次学习」，累加该科累计学时/次数</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px">暂停不会丢失已计时间；停止后自动写入「记录本次学习」，累加该科累计学时/次数</div>
       </div>`;
   },
   closeTimer() {
@@ -2605,7 +2608,7 @@ const PetCat = {
 
 // ===== 强制刷新守卫（写在 app.js 里，因为 app.js 走网络优先一定能拿到最新版）=====
 // 解决 iOS PWA 的终极缓存死锁：index.html 被 SW 缓存后永远不更新
-const _FORCE_VER = 'v23-doraemon-icons'; // 每次需要强制刷新时改此值
+const _FORCE_VER = 'v24-dedup-words'; // 每次需要强制刷新时改此值
 (function() {
   try {
     const last = localStorage.getItem('nn_force_ver') || '';

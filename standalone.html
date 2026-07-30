@@ -687,6 +687,17 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 .essay-box { background: var(--primary-soft); border-radius: 14px; padding: 16px; margin-top: 8px; }
 .essay-box .topic-label { font-size: 10px; color: var(--primary-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .essay-box .topic { font-size: 15px; font-weight: 700; margin-top: 4px; line-height: 1.6; }
+/* 我的积累：默认折叠，仅展示话题版，点击展开全文 */
+.myword { background: var(--primary-soft); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.myword summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; }
+.myword summary::-webkit-details-marker { display: none; }
+.myword .mw-title { flex: 1; font-weight: 700; color: var(--primary-dark); font-size: 15px; }
+.myword .mw-date { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.myword .mw-chev { color: var(--text-3); transition: transform .2s; }
+.myword[open] .mw-chev { transform: rotate(180deg); }
+.myword .mw-body { display: none; font-size: 13px; line-height: 1.9; white-space: pre-wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(124,179,66,.18); }
+.myword[open] .mw-body { display: block; }
+.myword .mw-actions { display: flex; gap: 6px; margin-top: 8px; }
 .essay-box .content-label { font-size: 10px; color: var(--primary-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; }
 .essay-box .content { font-size: 13px; line-height: 1.9; margin-top: 6px; }
 .essay-box .content p { margin-bottom: 6px; }
@@ -1036,37 +1047,47 @@ const ESSAY_DATA = [
 /**
  * 根据日期生成每日内容（纯客户端，不依赖后端）
  */
-function generateBuiltinDaily(dateStr) {
-  const seed = dateStr.split('-').reduce((a, b) => a * 1000 + parseInt(b), 0);
+// 固定起点：用于把"日期"换算成确定性的"第几天"，保证同一天永远生成同样内容（可回溯、刷新稳定）
+const DAILY_EPOCH = '2026-07-01';
+function _dayIndexFromDate(dateStr) {
+  const a = new Date(DAILY_EPOCH + 'T00:00:00');
+  const b = new Date(dateStr + 'T00:00:00');
+  return Math.floor((b - a) / 86400000);
+}
 
-  const pool = POLITICS_DATA.slice();
+function generateBuiltinDaily(dateStr) {
+  const dayIndex = _dayIndexFromDate(dateStr);
+
+  // 时政：28条池，每天5条，按"步长5"轮转 → 相邻日零重叠，约28天全覆盖一遍
+  const pPool = POLITICS_DATA.slice();
+  const pStart = ((dayIndex * 5) % pPool.length + pPool.length) % pPool.length;
   const politics = [];
-  let idx = seed;
-  while (politics.length < 5 && pool.length > 0) {
-    idx = (idx * 9301 + 49297) % 233280;
-    const pickIdx = idx % pool.length;
-    const item = pool.splice(pickIdx, 1)[0];
+  let cursor = pStart;
+  const catKw = {
+    '经济': ['经济','GDP','增长','产业','金融','贸易','消费','投资','企业','市场','财政','货币','就业','进出口','海关','工业'],
+    '科技': ['科技','航天','卫星','火箭','人工智能','5G','芯片','新能源','技术','创新','数字','互联网','量子','算力','低空'],
+    '民生': ['民生','教育','医疗','养老','住房','就业','社保','医保','学校','收入','卫生','台风','防汛','健身'],
+    '法治': ['法律','法规','司法','法院','检察院','公安','依法','违法','犯罪','法治','国防','军事','知识产权'],
+    '生态': ['生态','环保','碳','绿色','环境','气候','污染','排放','美丽中国'],
+    '外交': ['外交','国际','一带一路','人类命运共同体','全球','世界','丝路','金砖','中欧','中法','上合','东盟','王毅','纳米比亚'],
+  };
+  while (politics.length < 5 && pPool.length > 0) {
+    const item = pPool[cursor % pPool.length];
     let category = '国内';
-    const catKw = {
-      '经济': ['经济','GDP','增长','产业','金融','贸易','消费','投资','企业','市场','财政','货币','就业','进出口','海关','工业'],
-      '科技': ['科技','航天','卫星','火箭','人工智能','5G','芯片','新能源','技术','创新','数字','互联网','量子','算力','低空'],
-      '民生': ['民生','教育','医疗','养老','住房','就业','社保','医保','学校','收入','卫生','台风','防汛','健身'],
-      '法治': ['法律','法规','司法','法院','检察院','公安','依法','违法','犯罪','法治','国防','军事','知识产权'],
-      '生态': ['生态','环保','碳','绿色','环境','气候','污染','排放','美丽中国'],
-      '外交': ['外交','国际','一带一路','人类命运共同体','全球','世界','丝路','金砖','中欧','中法','上合','东盟','王毅','纳米比亚'],
-    };
     for (const [cat, kws] of Object.entries(catKw)) {
       if (kws.some(kw => item.body.includes(kw))) { category = cat; break; }
     }
     politics.push({ category, body: item.date + '，' + item.body, quiz: null });
+    cursor++;
   }
 
-  const essayIdx = seed % ESSAY_DATA.length;
+  // 申论：10条池，按天依次轮转（相邻日不重复）
+  const essay = ESSAY_DATA[((dayIndex % ESSAY_DATA.length) + ESSAY_DATA.length) % ESSAY_DATA.length];
 
   return {
     date: dateStr,
     politics,
-    essay: ESSAY_DATA[essayIdx],
+    essay,
     generated_at: new Date().toISOString(),
   };
 }
@@ -1621,6 +1642,8 @@ const Nav = {
       </div>`;
     }
     $('#app').innerHTML = topbar + `<div class="page active">${render()}</div>`;
+    // 计时卡片需等 DOM 插入后再渲染（避免被静态模板覆盖）
+    if (Nav.current === 'study' && Study._timerUiId) Study._renderTimerCard();
   },
   toggleSidebar() {
     document.body.classList.toggle('sb-open');
@@ -1969,17 +1992,18 @@ const DailyRead = {
       </div>
     `;
   },
-  _renderQuiz(date) {
-    if (typeof COMMON_SENSE === 'undefined' || !COMMON_SENSE.length) return `<div class="empty"><div class="emoji">🧠</div><div>题库加载中</div></div>`;
-    const seed = date.split('-').reduce((a, b) => a + parseInt(b), 0);
+  _quizPicks(date) {
+    if (typeof COMMON_SENSE === 'undefined' || !COMMON_SENSE.length) return [];
+    const n = COMMON_SENSE.length;
+    const dayIndex = _dayIndexFromDate(date);
+    const start = ((dayIndex * 3) % n + n) % n; // 步长3：相邻日零重叠，10题全覆盖
     const picks = [];
-    const pool = COMMON_SENSE.slice();
-    let idx = seed;
-    while (picks.length < 3 && pool.length) {
-      idx = (idx * 9301 + 49297) % 233280;
-      const i = idx % pool.length;
-      picks.push(pool.splice(i, 1)[0]);
-    }
+    for (let k = 0; k < 3 && n; k++) picks.push(COMMON_SENSE[(start + k) % n]);
+    return picks;
+  },
+  _renderQuiz(date) {
+    const picks = DailyRead._quizPicks(date);
+    if (!picks.length) return `<div class="empty"><div class="emoji">🧠</div><div>题库加载中</div></div>`;
     return `<div style="font-size:12px;color:var(--text-2);margin-bottom:10px">每日3题 · 今日(${fmtDate(date)})</div>` + picks.map((q, i) => `
       <div class="read-item" id="quiz-${i}" style="padding:14px 0">
         <div class="read-title" style="margin-bottom:8px">${i+1}. ${esc(q.q)}</div>
@@ -1990,13 +2014,8 @@ const DailyRead = {
       </div>`).join('');
   },
   answerQuiz(qi, oi) {
-    if (typeof COMMON_SENSE === 'undefined') return;
     const date = DailyRead._viewDate || todayStr();
-    const seed = date.split('-').reduce((a, b) => a + parseInt(b), 0);
-    const picks = [];
-    const pool = COMMON_SENSE.slice();
-    let idx = seed;
-    while (picks.length < 3 && pool.length) { idx = (idx * 9301 + 49297) % 233280; const i = idx % pool.length; picks.push(pool.splice(i, 1)[0]); }
+    const picks = DailyRead._quizPicks(date);
     const q = picks[qi];
     if (!q) return;
     const opts = $$(`#quiz-${qi} .opt`);
@@ -2011,17 +2030,18 @@ const DailyRead = {
     const daily = GOODWORDS_DEFAULT[dayIdx];
     const userWords = DB.get('goodwords', []);
     const userHtml = userWords.length ? userWords.slice().reverse().map(w => `
-      <div class="essay-box" style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
-          <div style="font-weight:700;color:var(--primary-dark);font-size:15px">${esc(w.title)}</div>
-          <div style="display:flex;gap:4px">
-            <button class="btn-sm" onclick="DailyRead.editWord('${w.id}')" style="font-size:11px;padding:2px 8px">✏️ 编辑</button>
-            <button class="task-delete" onclick="DailyRead.delWord('${w.id}')">${ICONS.trash}</button>
-          </div>
+      <details class="myword">
+        <summary>
+          <span class="mw-title">${esc(w.title)}</span>
+          <span class="mw-date">${w.date}</span>
+          <span class="mw-chev">▾</span>
+        </summary>
+        <div class="mw-body">${esc(w.content)}</div>
+        <div class="mw-actions">
+          <button class="btn-sm" onclick="DailyRead.editWord('${w.id}')" style="font-size:11px;padding:2px 8px">✏️ 编辑</button>
+          <button class="task-delete" onclick="DailyRead.delWord('${w.id}')">${ICONS.trash}</button>
         </div>
-        <div style="font-size:13px;line-height:1.9;white-space:pre-wrap;margin-top:6px">${esc(w.content)}</div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:6px">${w.date}</div>
-      </div>`).join('') : `<div class="empty" style="padding:16px"><div class="emoji">💎</div><div>还没有积累的好词好句，下面添加一条吧</div></div>`;
+      </details>`).join('') : `<div class="empty" style="padding:16px"><div class="emoji">💎</div><div>还没有积累的好词好句，下面添加一条吧</div></div>`;
     return `
       <div class="essay-box" style="margin-bottom:12px">
         <div class="topic-label">📅 今日推送（${fmtDate(date)}）</div>
@@ -2280,23 +2300,27 @@ const Study = {
   _renderTimerCard() {
     const id = Study._timerUiId;
     if (!id) return;
-    const el = document.getElementById('timerCard');
+    const el = document.getElementById('timerInner');
     if (!el) return;
+    const titleEl = document.getElementById('timerCardTitle');
+    const tt = Study.ensureSubjects().find(x => x.id === id);
+    if (titleEl && tt) titleEl.textContent = '⏱ 计时 · ' + tt.name;
     const st = DB.get('studyTimer', null);
     const running = st && st.running && st.id === id;
     const sec = running ? (st.sec + Math.floor((Date.now() - st.startedAt) / 1000)) : (st ? st.sec : 0);
+    const paused = st && !st.running && st.id === id;
     el.innerHTML = `
       <div style="text-align:center">
         <div id="timerDisplay" style="font-size:48px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;letter-spacing:-1px">${Study.fmtTimer(sec)}</div>
-        <div style="font-size:12px;color:var(--text-3);margin:4px 0 12px">${running ? '计时中 · 锁屏/切屏不影响' : '已暂停（点开始继续）'}</div>
+        <div style="font-size:12px;color:var(--text-3);margin:4px 0 12px">${running ? '计时中 · 锁屏/切屏不影响' : (paused ? '已暂停 · 点继续计时接着累计' : '未开始 · 点开始计时')}</div>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
           ${running
             ? `<button class="btn secondary" onclick="Study.pauseTimer()">⏸ 暂停</button>`
-            : `<button class="btn" onclick="Study.startTimer('${id}')">▶ 开始计时</button>`}
+            : `<button class="btn" onclick="Study.startTimer('${id}')">${paused ? '▶ 继续计时' : '▶ 开始计时'}</button>`}
           <button class="btn" onclick="Study.stopTimer('${id}')">⏹ 停止并记录</button>
           <button class="btn secondary" onclick="Study.closeTimer()">✕ 收起</button>
         </div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:8px">停止后自动写入「记录本次学习」，累加该科累计学时/次数</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px">暂停不会丢失已计时间；停止后自动写入「记录本次学习」，累加该科累计学时/次数</div>
       </div>`;
   },
   closeTimer() {
@@ -4039,7 +4063,7 @@ const PetCat = {
 
 // ===== 强制刷新守卫（写在 app.js 里，因为 app.js 走网络优先一定能拿到最新版）=====
 // 解决 iOS PWA 的终极缓存死锁：index.html 被 SW 缓存后永远不更新
-const _FORCE_VER = 'v23-doraemon-icons'; // 每次需要强制刷新时改此值
+const _FORCE_VER = 'v24-dedup-words'; // 每次需要强制刷新时改此值
 (function() {
   try {
     const last = localStorage.getItem('nn_force_ver') || '';
@@ -4092,7 +4116,7 @@ const _FORCE_VER = 'v23-doraemon-icons'; // 每次需要强制刷新时改此值
 
 <script>
 // ===== 强制更新机制：解决 iOS Safari PWA 缓存不刷新问题 =====
-const APP_VERSION = '2026-07-29-v23-doraemon-icons'; // 每次大更新时改此值，用户打开即自动清旧缓存
+const APP_VERSION = '2026-07-30-v24-dedup-words'; // 每次大更新时改此值，用户打开即自动清旧缓存
 (function() {
   try {
     const lastVer = localStorage.getItem('nini_app_ver') || '';

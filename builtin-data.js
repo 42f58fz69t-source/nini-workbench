@@ -136,37 +136,47 @@ const ESSAY_DATA = [
 /**
  * 根据日期生成每日内容（纯客户端，不依赖后端）
  */
-function generateBuiltinDaily(dateStr) {
-  const seed = dateStr.split('-').reduce((a, b) => a * 1000 + parseInt(b), 0);
+// 固定起点：用于把"日期"换算成确定性的"第几天"，保证同一天永远生成同样内容（可回溯、刷新稳定）
+const DAILY_EPOCH = '2026-07-01';
+function _dayIndexFromDate(dateStr) {
+  const a = new Date(DAILY_EPOCH + 'T00:00:00');
+  const b = new Date(dateStr + 'T00:00:00');
+  return Math.floor((b - a) / 86400000);
+}
 
-  const pool = POLITICS_DATA.slice();
+function generateBuiltinDaily(dateStr) {
+  const dayIndex = _dayIndexFromDate(dateStr);
+
+  // 时政：28条池，每天5条，按"步长5"轮转 → 相邻日零重叠，约28天全覆盖一遍
+  const pPool = POLITICS_DATA.slice();
+  const pStart = ((dayIndex * 5) % pPool.length + pPool.length) % pPool.length;
   const politics = [];
-  let idx = seed;
-  while (politics.length < 5 && pool.length > 0) {
-    idx = (idx * 9301 + 49297) % 233280;
-    const pickIdx = idx % pool.length;
-    const item = pool.splice(pickIdx, 1)[0];
+  let cursor = pStart;
+  const catKw = {
+    '经济': ['经济','GDP','增长','产业','金融','贸易','消费','投资','企业','市场','财政','货币','就业','进出口','海关','工业'],
+    '科技': ['科技','航天','卫星','火箭','人工智能','5G','芯片','新能源','技术','创新','数字','互联网','量子','算力','低空'],
+    '民生': ['民生','教育','医疗','养老','住房','就业','社保','医保','学校','收入','卫生','台风','防汛','健身'],
+    '法治': ['法律','法规','司法','法院','检察院','公安','依法','违法','犯罪','法治','国防','军事','知识产权'],
+    '生态': ['生态','环保','碳','绿色','环境','气候','污染','排放','美丽中国'],
+    '外交': ['外交','国际','一带一路','人类命运共同体','全球','世界','丝路','金砖','中欧','中法','上合','东盟','王毅','纳米比亚'],
+  };
+  while (politics.length < 5 && pPool.length > 0) {
+    const item = pPool[cursor % pPool.length];
     let category = '国内';
-    const catKw = {
-      '经济': ['经济','GDP','增长','产业','金融','贸易','消费','投资','企业','市场','财政','货币','就业','进出口','海关','工业'],
-      '科技': ['科技','航天','卫星','火箭','人工智能','5G','芯片','新能源','技术','创新','数字','互联网','量子','算力','低空'],
-      '民生': ['民生','教育','医疗','养老','住房','就业','社保','医保','学校','收入','卫生','台风','防汛','健身'],
-      '法治': ['法律','法规','司法','法院','检察院','公安','依法','违法','犯罪','法治','国防','军事','知识产权'],
-      '生态': ['生态','环保','碳','绿色','环境','气候','污染','排放','美丽中国'],
-      '外交': ['外交','国际','一带一路','人类命运共同体','全球','世界','丝路','金砖','中欧','中法','上合','东盟','王毅','纳米比亚'],
-    };
     for (const [cat, kws] of Object.entries(catKw)) {
       if (kws.some(kw => item.body.includes(kw))) { category = cat; break; }
     }
     politics.push({ category, body: item.date + '，' + item.body, quiz: null });
+    cursor++;
   }
 
-  const essayIdx = seed % ESSAY_DATA.length;
+  // 申论：10条池，按天依次轮转（相邻日不重复）
+  const essay = ESSAY_DATA[((dayIndex % ESSAY_DATA.length) + ESSAY_DATA.length) % ESSAY_DATA.length];
 
   return {
     date: dateStr,
     politics,
-    essay: ESSAY_DATA[essayIdx],
+    essay,
     generated_at: new Date().toISOString(),
   };
 }
