@@ -202,14 +202,42 @@ const Nav = {
 };
 
 window.addEventListener('resize', () => { Nav.refresh(); });
-// 回到前台/可见时自动刷新，确保"今天"等时间始终与真实时间同步
-document.addEventListener('visibilitychange', () => { if (!document.hidden) Nav.refresh(); });
-window.addEventListener('focus', () => Nav.refresh());
-// 每分钟检查一次日期变化，跨过午夜时自动刷新
-setInterval(() => {
+
+// 「每日必读」每日上午9点实时更新
+//   · GitHub Actions 每天北京时间9点生成 news/daily-YYYY-MM-DD.json
+//   · App 在 9 点后自动清空当日缓存并重新拉取远程最新内容（无网络/404 则回退本地内置）
+//   · 跨过午夜自动刷新（内容随日期轮换）
+//   · 回到前台/可见时也触发检查（覆盖 App 在后台跨过 9 点的情况）
+let _dailyRemoteFetched = '';   // 已拉取远程内容的日期（避免同日内重复拉取）
+function _dailyReadAutoUpdate(showToast) {
   const now = new Date();
-  if (now.getHours() === 0 && now.getMinutes() === 0) Nav.refresh();
-}, 60000);
+  const today = todayStr();
+  // 跨午夜：日期切换，清空全部缓存并刷新
+  if (now.getHours() === 0 && now.getMinutes() === 0) {
+    DailyRead._cache = {};
+    _dailyRemoteFetched = '';
+    if (Nav.current === 'dailyread') Nav.refresh();
+    return;
+  }
+  // 上午9点之后：若今日远程内容尚未拉取，则强制重新抓取当日最新（实现"9点实时更新"）
+  if (now.getHours() >= 9 && _dailyRemoteFetched !== today) {
+    _dailyRemoteFetched = today;
+    const view = DailyRead._viewDate || today;
+    DailyRead._cache[view] = null;   // 清空当日/当前查看日缓存，强制重新拉取
+    DailyRead._load(view).then(() => {
+      if (Nav.current === 'dailyread') {
+        Nav.refresh();
+        if (showToast) toast('📰 每日必读已更新（9点）');
+      }
+    });
+    if (view !== today) { DailyRead._cache[today] = null; DailyRead._load(today); }
+  }
+}
+// 每分钟检查一次（覆盖 App 在前台跨过 9 点 / 午夜）
+setInterval(() => _dailyReadAutoUpdate(false), 60000);
+// 回到前台/可见时也检查（覆盖 App 在后台跨过 9 点的情况）
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { Nav.refresh(); _dailyReadAutoUpdate(true); } });
+window.addEventListener('focus', () => { Nav.refresh(); _dailyReadAutoUpdate(true); });
 
 /* ============================================
    HOME
@@ -2608,7 +2636,7 @@ const PetCat = {
 
 // ===== 强制刷新守卫（写在 app.js 里，因为 app.js 走网络优先一定能拿到最新版）=====
 // 解决 iOS PWA 的终极缓存死锁：index.html 被 SW 缓存后永远不更新
-const _FORCE_VER = 'v24-dedup-words'; // 每次需要强制刷新时改此值
+const _FORCE_VER = 'v25-daily9am'; // 每次需要强制刷新时改此值
 (function() {
   try {
     const last = localStorage.getItem('nn_force_ver') || '';
